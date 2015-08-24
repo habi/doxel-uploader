@@ -552,6 +552,9 @@ var views={
 
       });
 
+      // bug report button
+      $('.bugreport').button();
+
     }, // views.plupload.setupEventHandlers
 
     /**

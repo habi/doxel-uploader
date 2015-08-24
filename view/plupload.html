@@ -1,65 +1,72 @@
 <div id="plupload">
-    <div class="plupload_wrapper">
-      <div class="ui-widget-content plupload_container">
+<div class="plupload_wrapper">
+  <div class="ui-widget-content plupload_container">
 
-            <div class="plupload_started plupload_hidden"><!-- Hidden -->
-              <span class="cancel ui-button-icon-primary ui-icon ui-icon-circle-close"></span>
-              <div class="plupload_progress_title">Uploading Files</div>
+    <!-- BEGIN upload progress dialog -->
+    <div class="plupload_started plupload_hidden"><!-- Hidden -->
+      <span class="cancel ui-button-icon-primary ui-icon ui-icon-circle-close"></span>
+      <div class="plupload_progress_title">Uploading Files</div>
 
-              <div class="plupload_progress plupload_center">
-                <div class="plupload_progress_container"></div>
-                <div class="plupload_total_status">0%</div>
-              <div class="plupload_cell plupload_speed_status"></div>
-              </div>
-
-
-              <div class="plupload_clearer">&nbsp;</div>
-            </div>
-
-        <div class="ui-state-default ui-widget-header plupload_header">
-          <div class="plupload_header_content">
-            <!--div class="plupload_logo"> </div>
-            <div class="plupload_header_title">Select files</div>
-            <div class="plupload_header_text">Add files to the upload queue and click the start button.</div-->
-            <div class="plupload_view_switch">
-              <input type="radio" id="plupload_view_list" name="view_mode_plupload" checked="checked" /><label class="plupload_button" for="plupload_view_list" data-view="list">List</label>
-              <input type="radio" id="plupload_view_thumbs" name="view_mode_plupload" /><label class="plupload_button"  for="plupload_view_thumbs" data-view="thumbs">Thumbnails</label>
-            </div>
-          </div>
-        </div>
-
-        <table class="plupload_filelist plupload_filelist_header ui-widget-header">
-        <tr>
-          <td class="plupload_cell plupload_file_name">Filename</td>
-          <td class="plupload_cell plupload_file_status">Status</td>
-          <td class="plupload_cell plupload_file_size">Size</td>
-          <td class="plupload_cell plupload_file_action">&nbsp;</td>
-        </tr>
-        </table>
-
-        <div class="plupload_content">
-          <div class="plupload_droptext">Drag files here.</div>
-          <ul class="plupload_filelist_content"> </ul>
-          <div class="plupload_clearer">&nbsp;</div>
-        </div>
-
-        <table class="plupload_filelist plupload_filelist_footer ui-widget-header">
-        <tr>
-          <td class="plupload_cell plupload_file_name">
-            <div class="plupload_buttons"><!-- Visible -->
-              <a class="plupload_button plupload_add">Add Files</a>&nbsp;
-              <a class="plupload_button plupload_start">Start Upload</a>&nbsp;
-              <a class="plupload_button plupload_stop plupload_hidden">Stop Upload</a>&nbsp;
-              <a class="plupload_button plupload_trash">Remove</a>&nbsp;
-            </div>
-          </td>
-          <td class="plupload_file_status"><span class="plupload_total_status">0%</span></td>
-          <td class="plupload_file_size"><span class="plupload_total_file_size">0 kb</span></td>
-          <td class="plupload_file_action"></td>
-        </tr>
-        </table>
-
+      <div class="plupload_progress plupload_center">
+        <div class="plupload_progress_container"></div>
+        <div class="plupload_total_status">0%</div>
+        <div class="plupload_cell plupload_speed_status"></div>
       </div>
-      <input class="plupload_count" value="0" type="hidden">
+
+      <div class="plupload_clearer">&nbsp;</div>
     </div>
+    <!-- END upload progress dialog -->
+
+    <!-- BEGIN plupload header -->
+    <div class="ui-state-default ui-widget-header plupload_header">
+      <div class="plupload_header_content">
+        <a class="button bugreport fa fa-bug" target="_blank" href="//github.com/doxel/doxel-webapp/issues">Bug Report</a>
+        <div class="plupload_view_switch">
+          <input type="radio" id="plupload_view_list" name="view_mode_plupload" checked="checked" /><label class="plupload_button" for="plupload_view_list" data-view="list">List</label>
+          <input type="radio" id="plupload_view_thumbs" name="view_mode_plupload" /><label class="plupload_button"  for="plupload_view_thumbs" data-view="thumbs">Thumbnails</label>
+        </div>
+      </div>
+    </div>
+    <!-- END plupload header -->
+
+    <!-- BEGIN filelist header -->
+    <table class="plupload_filelist plupload_filelist_header ui-widget-header">
+      <tr>
+        <td class="plupload_cell plupload_file_name">Filename</td>
+        <td class="plupload_cell plupload_file_status">Status</td>
+        <td class="plupload_cell plupload_file_size">Size</td>
+        <td class="plupload_cell plupload_file_action">&nbsp;</td>
+      </tr>
+    </table>
+    <!-- END filelist header -->
+
+    <!-- BEGIN filelist content -->
+    <div class="plupload_content">
+      <div class="plupload_droptext">Drag files here.</div>
+      <ul class="plupload_filelist_content"> </ul>
+      <div class="plupload_clearer">&nbsp;</div>
+    </div>
+    <!-- END filelist content -->
+
+    <!-- BEGIN filelist footer -->
+    <table class="plupload_filelist plupload_filelist_footer ui-widget-header">
+      <tr>
+        <td class="plupload_cell plupload_file_name">
+          <div class="plupload_buttons"><!-- Visible -->
+            <a class="plupload_button plupload_add">Add Files</a>&nbsp;
+            <a class="plupload_button plupload_start">Start Upload</a>&nbsp;
+            <a class="plupload_button plupload_stop plupload_hidden">Stop Upload</a>&nbsp;
+            <a class="plupload_button plupload_trash">Remove</a>&nbsp;
+          </div>
+        </td>
+        <td class="plupload_file_status"><span class="plupload_total_status">0%</span></td>
+        <td class="plupload_file_size"><span class="plupload_total_file_size">0 kb</span></td>
+        <td class="plupload_file_action"></td>
+      </tr>
+    </table>
+    <!-- END filelist footer -->
+
+  </div>
+  <input class="plupload_count" value="0" type="hidden">
+</div>
 </div>

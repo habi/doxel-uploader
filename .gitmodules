@@ -11,3 +11,6 @@
 [submodule "js/thirdparty/jquery-cookie"]
 	path = js/thirdparty/jquery-cookie
 	url = https://github.com/carhartl/jquery-cookie.git
+[submodule "css/thirdparty/Font-Awesome"]
+	path = css/thirdparty/Font-Awesome
+	url = https://github.com/FortAwesome/Font-Awesome.git
