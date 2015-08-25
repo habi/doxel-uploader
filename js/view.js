@@ -55,6 +55,8 @@ function View(options) {
 
   $.extend(true,this,this.defaults,options);
 
+  this.init();
+
 } // View
 
 $.extend(true,View.prototype,{
@@ -79,6 +81,12 @@ $.extend(true,View.prototype,{
   }, // defaults
 
   /**
+   * @method View.init
+   */
+  init: function view_init(){
+  }, // view.init
+
+  /**
    * @method View.getElem
    *
    * @return {Object} [$container] jQuery object for the view.container
@@ -101,9 +109,15 @@ $.extend(true,View.prototype,{
     var view=this;
     var container=view.getElem();
 
+    if (view.jqXHR) {
+      // loading html
+      console.log('view already loading:',view);
+      return;
+    }
+
     if (!container.length || view.reload) {
       // html not yet loaded
-      $.ajax({
+      view.jqXHR=$.ajax({
 
         cache: false,
         dataType:'html',
@@ -154,6 +168,19 @@ $.extend(true,View.prototype,{
     var view=this;
     $(view).trigger('ready',[view]);
 
-  } // view.onload
+  }, // view.onload
+
+  /**
+   * @method View.onready
+   *
+   * @param {Object} [e] the event
+   * @param {Object} [view] the view
+   *
+   */
+  onready: function view_onready(e,view){
+    var view=this;
+    view.jqXHR=null;
+
+  } // view.onready
 
 }); // extend View.prototype

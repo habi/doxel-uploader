@@ -26,6 +26,5 @@
     <script type="text/javascript" src="js/doxel-webapp.js"></script>
   </head>
   <body class="disable-selection">
-  <a href="//github.com/doxel/doxel-webapp" target="_blank"><img style="position: absolute; top: 0; left: 0; border: 0; z-Index: 9999;" src="css/img/forkme.png" alt="Fork me on GitHub" data-canonical-src="https://s4.amazonaws.com/github/ribbons/forkme_left_white_ffffff.png"></a>
   </body>
 </html>

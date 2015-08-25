@@ -208,7 +208,7 @@ input.ui-button {
 
 /* button sets */
 .ui-buttonset {
-	margin-right: 7px;
+	/* margin-right: 7px; */
 }
 .ui-buttonset .ui-button {
 	margin-left: 0;

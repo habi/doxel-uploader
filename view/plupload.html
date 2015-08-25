@@ -20,11 +20,30 @@
     <!-- BEGIN plupload header -->
     <div class="ui-state-default ui-widget-header plupload_header">
       <div class="plupload_header_content">
-        <a class="button bugreport fa fa-bug" target="_blank" href="//github.com/doxel/doxel-webapp/issues">Bug Report</a>
-        <div class="plupload_view_switch">
-          <input type="radio" id="plupload_view_list" name="view_mode_plupload" checked="checked" /><label class="plupload_button" for="plupload_view_list" data-view="list">List</label>
-          <input type="radio" id="plupload_view_thumbs" name="view_mode_plupload" /><label class="plupload_button"  for="plupload_view_thumbs" data-view="thumbs">Thumbnails</label>
-        </div>
+        <table class="fa-button-group">
+          <tr>
+            <td> 
+              <div class="plupload_buttons">
+                <a class="fa-button fa-plus-circle plupload_button plupload_add">Add Files</a>
+                <a class="fa-button fa-cloud-upload plupload_button plupload_start">Start Upload</a>
+                <a class="fa-button fa-close plupload_button plupload_stop plupload_hidden">Stop Upload</a>
+                <a class="fa-button fa-trash plupload_button plupload_trash">Remove</a>
+              </div>
+            </td>
+            <td>
+              <div class="plupload_github_buttons">
+                <a class="plupload_button fa-button forkme fa fa-code-fork" target="_blank" href="//github.com/doxel/doxel-webapp">Fork me on GitHub</a>
+                <a class="plupload_button fa-button bugreport fa fa-bug" target="_blank" href="//github.com/doxel/doxel-webapp/issues">Bug Report</a>
+              </div>
+            </td>
+            <td>
+              <div class="plupload_view_switch">
+                <input type="radio" id="plupload_view_list" name="view_mode_plupload" checked="checked" /><label class="fa-button fa-list plupload_button" for="plupload_view_list" data-view="list" title="List"></label>
+                <input type="radio" id="plupload_view_thumbs" name="view_mode_plupload" /><label class="fa-button fa-image plupload_button"  for="plupload_view_thumbs" data-view="thumbs" title="Thumbnails"></label>
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
     <!-- END plupload header -->
@@ -51,13 +70,16 @@
     <!-- BEGIN filelist footer -->
     <table class="plupload_filelist plupload_filelist_footer ui-widget-header">
       <tr>
+        <td class="termsAndConditions_link">
+          <a class="termsAndConditions_link">View Terms and Conditions</a>
+        </td>
         <td class="plupload_cell plupload_file_name">
-          <div class="plupload_buttons"><!-- Visible -->
-            <a class="plupload_button plupload_add">Add Files</a>&nbsp;
-            <a class="plupload_button plupload_start">Start Upload</a>&nbsp;
-            <a class="plupload_button plupload_stop plupload_hidden">Stop Upload</a>&nbsp;
-            <a class="plupload_button plupload_trash">Remove</a>&nbsp;
-          </div>
+          <!--div class="plupload_buttons">
+            <a class="fa-button fa-plus-circle plupload_button plupload_add">Add Files</a>&nbsp;
+            <a class="fa-button fa-cloud-upload plupload_button plupload_start">Start Upload</a>&nbsp;
+            <a class="fa-button fa-close plupload_button plupload_stop plupload_hidden">Stop Upload</a>&nbsp;
+            <a class="fa-button fa-trash plupload_button plupload_trash">Remove</a>&nbsp;
+            </div-->
         </td>
         <td class="plupload_file_status"><span class="plupload_total_status">0%</span></td>
         <td class="plupload_file_size"><span class="plupload_total_file_size">0 kb</span></td>
@@ -66,7 +88,7 @@
     </table>
     <!-- END filelist footer -->
 
-  </div>
-  <input class="plupload_count" value="0" type="hidden">
+</div>
+<input class="plupload_count" value="0" type="hidden">
 </div>
 </div>

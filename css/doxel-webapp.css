@@ -1,6 +1,6 @@
 html {
   height: 100%;
-  min-height: 480px;
+  min-height: 240px;
 }
 
 body {
@@ -8,7 +8,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  min-height: 275px;
+  /* min-height: 275px; */
 
 }
 
@@ -292,7 +292,6 @@ li.plupload_file.ui-selected {
   overflow-x: hidden;
   position: relative;
   height: 100%;
-  width: 66%;
   margin-left: auto;
   margin-right: auto;
   text-align: center;
@@ -349,15 +348,12 @@ li.plupload_file.ui-selected {
   pointer-events: none;
 }
 
-.bugreport {
-  left:70px;
-  top:50%;
-  margin-top: -11px;
-  height: 22px;
+.fa-button {
+  position: relative;
 
 }
 
-.ui-widget.bugreport:before {
+.ui-widget.fa-button:before {
   font-family: FontAwesome;
   font-size: 11px;
   line-height: 24px;
@@ -365,11 +361,66 @@ li.plupload_file.ui-selected {
 
 }
 
-.ui-button.bugreport .ui-button-text {
+.ui-button.fa-button .ui-button-text {
   font-family: FontAwesome;
     display: inline-block;
     line-height: 11px;
     font-size: 11px;
     padding-left: 4px;
     padding-right: 8px;
+}
+
+.fa-button-group {
+  position: absolute;
+  height: 20px;
+  top: 50%;
+  left: 0px;
+  margin: 0px;
+  /* margin: 12px; */
+  margin-top: -16px;
+  padding: 0px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.plupload_github_buttons {
+  float: right;
+
+}
+
+a.termsAndConditions_link {
+  margin-left: 6px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+a.termsAndConditions_link:hover {
+  color: blue;
+}
+
+.fa-button {
+  min-width: 32px;
+
+}
+
+.plupload_buttons a, .plupload_github_buttons a {
+  margin-right: 10px;
+}
+
+@media all and (max-width: 639px) {
+
+    .plupload_buttons a, .plupload_github_buttons a {
+      margin-right: 4px;
+    }
+
+    a span { 
+      visibility: hidden;
+      width: 0px;
+      margin-right: -4px;
+    }
+
+    .ui-widget.fa-button:before {
+      font-size: 1.5em;
+      line-height: 1.5em;
+    }
 }

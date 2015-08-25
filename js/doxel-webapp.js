@@ -65,6 +65,7 @@ var views={
     onload: function views_termsAndConditions_onload() {
       var view=this;
       view.setupEventHandlers();
+      $(view).trigger('ready');
 
     }, // views.termsAndConditions.onload
 
@@ -145,7 +146,7 @@ var views={
       */
       FilesAdded: function views_plupload_uploaderEvents_filesAdded(uploader,files){
         if (uploader.file_duplicate_count) {
-            alert(uploader.file_duplicate_count+' duplicate files were discarded.');
+            alert(uploader.file_duplicate_count+' duplicate file'+((uploader.file_duplicate_count>1)?'s were':' was')+' discarded by server.');
             uploader.file_duplicate_count=0;
         }
       },
@@ -189,17 +190,19 @@ var views={
         switch (uploader.state) {
             case plupload.STARTED:
                 // hide buttons during upload
-                $('.plupload_buttons', views.plupload.container).hide(0);
+                $('.plupload_buttons .ui-widget', views.plupload.container).css('visibility','hidden');
                 break;
 
             case plupload.STOPPED:
                 // show buttons hidden during upload
-                $('.plupload_buttons', views.plupload.container).show(0);
+                $('.plupload_buttons .ui-widget', views.plupload.container).css('visibility','visible');
 
                 if (uploader.file_duplicate_count) {
-                    alert(uploader.file_duplicate_count+' duplicate files were discarded by server.');
+                    alert(uploader.file_duplicate_count+' duplicate file'+((uploader.file_duplicate_count>1)?'s were':' was')+' discarded by server.');
                     uploader.file_duplicate_count=0;
                 }
+
+                $(views.plupload.container).trigger('lazyload');
         }
 
       }, // views.plupload.uploaderEvents.StateChanged
@@ -544,16 +547,37 @@ var views={
 
       // trash button
       $('.plupload_buttons .plupload_trash', views.plupload.container).button({
-        icons: { primary: "ui-icon-trash" },
+//        icons: { primary: "ui-icon-trash" },
         disabled: true
 
-      }).on('click',function(){
-        views.plupload.removeFilesFromQueue();
+      }).on('click',function(e){
+        var selection=$('.plupload_filelist_content .ui-selected', views.plupload.container);
+        if (confirm($(e.target).text()+' from upload queue ?')) {
+            views.plupload.removeFilesFromQueue();
+        }
 
       });
 
-      // bug report button
-      $('.bugreport').button();
+      // buttons except view radio buttons
+      $('.fa-button').not('.plupload_view_switch label').button();
+
+      // refresh html5 input size on resize
+      $(views.plupload.container).on('resize',function(){
+        plupload.uploader.refresh();
+      });
+
+      $('a.termsAndConditions_link',views.plupload.container).on('click',function(){
+
+        webapp.onagree=function(){
+          views.termsAndConditions.getElem().hide(0);
+          views.plupload.getElem().show(0);
+        }
+
+        views.plupload.getElem().hide(0);
+
+        views.termsAndConditions.show();
+
+      });
 
     }, // views.plupload.setupEventHandlers
 
@@ -624,6 +648,9 @@ var views={
         });
 
       }
+
+      plupload.uploader.trigger('lazyload');
+
     }, // views.plupload.removeFilesFromQueue
 
 
