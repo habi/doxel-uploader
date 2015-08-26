@@ -44,6 +44,7 @@
 *
 * @return {Object} [view] the view instance
 *
+* @event {error} the view could not be loaded
 * @event {load} the view is loaded
 * @event {ready} the view is ready
 *
@@ -144,7 +145,7 @@ $.extend(true,View.prototype,{
         },
 
         error: function() {
-          $(view).trigger('loaderror',[view]);
+          $(view).trigger('error',[view]);
           alert('Could not load '+view.url);
         }
 
