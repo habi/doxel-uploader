@@ -146,7 +146,7 @@ var views={
       */
       FilesAdded: function views_plupload_uploaderEvents_filesAdded(uploader,files){
         if (uploader.file_duplicate_count) {
-            alert(uploader.file_duplicate_count+' duplicate file'+((uploader.file_duplicate_count>1)?'s were':' was')+' discarded by server.');
+            alert(uploader.file_duplicate_count+' duplicate file'+((uploader.file_duplicate_count>1)?'s were':' was')+' discarded.');
             uploader.file_duplicate_count=0;
         }
       },
