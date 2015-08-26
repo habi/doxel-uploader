@@ -562,7 +562,7 @@ var views={
       $('.fa-button').not('.plupload_view_switch label').button();
 
       // refresh html5 input size on resize
-      $(views.plupload.container).on('resize',function(){
+      $(window).on('resize',function(){
         plupload.uploader.refresh();
       });
 
