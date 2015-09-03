@@ -34,19 +34,19 @@ information about our Licensing terms and our Usage and Attribution guidelines.
 
 This program includes works distributed under the terms of another license(s) and other copyright notice(s).
 
-*   __Fingerprintjs2 0.7.1__
-    <[https://github.com/Valve/fingerprintjs2](https://github.com/Valve/fingerprintjs2)>
-    Copyright (c) 2015 Valentin Vasilyev (valentin.vasilyev@outlook.com)
+*   __Fingerprintjs2 0.7.1__<br />
+    <[https://github.com/Valve/fingerprintjs2](https://github.com/Valve/fingerprintjs2)><br />
+    Copyright (c) 2015 Valentin Vasilyev (valentin.vasilyev@outlook.com)<br />
     Released under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __Font Awesome 4.4.0__
-    <[http://fontawesome.io](http://fontawesome.io)>
-    Font Awesome by Dave Gandy - http://fontawesome.io
+*   __Font Awesome 4.4.0__<br />
+    <[http://fontawesome.io](http://fontawesome.io)><br />
+    Font Awesome by Dave Gandy - http://fontawesome.io<br />
     Font Awesome is licensed under the [SIL OFL 1.1 license](http://scripts.sil.org/OFL).
 
-*   __jQuery 2.1.4__
-    <[http://jquery.com](http://jquery.com)>
-    Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors
+*   __jQuery 2.1.4__<br />
+    <[http://jquery.com](http://jquery.com)><br />
+    Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors<br />
     jQuery is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
 *   __jQuery Cookie Plugin v1.4.1__<br />
