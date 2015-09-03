@@ -49,23 +49,23 @@ This program includes works distributed under the terms of another license(s) an
     Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors
     jQuery is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __jQuery Cookie Plugin v1.4.1__
-    <[https://github.com/carhatl/jquery-cookie](https://github.com/carhatl/jquery-cookie)
+*   __jQuery Cookie Plugin v1.4.1__<br />
+    <[https://github.com/carhatl/jquery-cookie](https://github.com/carhatl/jquery-cookie)<br />
     Copyright 2006, 2014 Klaus Hartl<br />
     Released under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __jQuery UI 1.11.4__
-    <[http://jqueryui.com](http://jqueryui.com)>
-    Copyright 2015 jQuery Foundation and other contributors
+*   __jQuery UI 1.11.4__<br />
+    <[http://jqueryui.com](http://jqueryui.com)><br />
+    Copyright 2015 jQuery Foundation and other contributors<br />
     Released under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __blueimp-load-image 1.10.0__
-    <[https://blueimp.net](https://blueimp.net)>
-    Copyright 2011 Sebastian Tschan
+*   __blueimp-load-image 1.10.0__<br />
+    <[https://blueimp.net](https://blueimp.net)><br />
+    Copyright 2011 Sebastian Tschan<br />
     Released under the [MIT license](http://opensource.org/licenses/MIT).
 
-*  __plupload.js
-    <[http://www.moxiecode.com/](http://www.moxiecode.com/)>
-    Copyright 2013, [Moxiecode Systems AB](http://www.moxiecode.com/)
+*  __plupload.js<br />
+    <[http://www.moxiecode.com/](http://www.moxiecode.com/)><br />
+    Copyright 2013, [Moxiecode Systems AB](http://www.moxiecode.com/)<br />
     Released under [GPLv2 License](https://github.com/moxiecode/plupload/blob/master/license.txt).
 
