@@ -34,6 +34,11 @@ information about our Licensing terms and our Usage and Attribution guidelines.
 
 This program includes works distributed under the terms of another license(s) and other copyright notice(s).
 
+*   __blueimp-load-image 1.10.0__<br />
+    <[https://blueimp.net](https://blueimp.net)><br />
+    Copyright 2011 Sebastian Tschan<br />
+    Released under the [MIT license](http://opensource.org/licenses/MIT).
+
 *   __Fingerprintjs2 0.7.1__<br />
     <[https://github.com/Valve/fingerprintjs2](https://github.com/Valve/fingerprintjs2)><br />
     Copyright (c) 2015 Valentin Vasilyev (valentin.vasilyev@outlook.com)<br />
@@ -59,12 +64,7 @@ This program includes works distributed under the terms of another license(s) an
     Copyright 2015 jQuery Foundation and other contributors<br />
     Released under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __blueimp-load-image 1.10.0__<br />
-    <[https://blueimp.net](https://blueimp.net)><br />
-    Copyright 2011 Sebastian Tschan<br />
-    Released under the [MIT license](http://opensource.org/licenses/MIT).
-
-*  __plupload.js<br />
+*  __plupload.js__<br />
     <[http://www.moxiecode.com/](http://www.moxiecode.com/)><br />
     Copyright 2013, [Moxiecode Systems AB](http://www.moxiecode.com/)<br />
     Released under [GPLv2 License](https://github.com/moxiecode/plupload/blob/master/license.txt).
