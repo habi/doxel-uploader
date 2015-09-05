@@ -22,6 +22,7 @@
     <script type="text/javascript" src="js/thirdparty/plupload/js/jquery.ui.plupload/jquery.ui.plupload.js"></script>
     <script type="text/javascript" src="js/thirdparty/jquery-cookie/src/jquery.cookie.js"></script>
     <script type="text/javascript" src="js/thirdparty/fingerprintjs2/fingerprint2.js"></script>
+    <script type="text/javascript" src="js/histogram.js"></script>
     <script type="text/javascript" src="js/view.js"></script>
     <script type="text/javascript" src="js/doxel-webapp.js"></script>
   </head>

@@ -290,7 +290,9 @@ var views={
             // set metadata to be uploaded
             uploader.setOption('multipart_params',{
               timestamp: timestamp,
-              user: webapp.fingerprint
+              user: webapp.fingerprint,
+              H: file.histogram.H,
+              S: file.histogram.S
             });
 
             // start upload
@@ -436,6 +438,8 @@ var views={
         */
         selected: function(e,o){
             views.plupload.selectFiles(o.files);
+            views.plupload.getHistograms(o.files);
+
         }, // selected
 
        /**
@@ -769,7 +773,64 @@ var views={
           // update trash button visibility
           .button('option','disabled',(plupload.uploader.total.queued==0));
 
-    } // views.plupload.updateTrashButton
+    }, // views.plupload.updateTrashButton
+
+    /**
+    * @method views.plupload.getHistograms
+    */
+    getHistograms: function views_plupload_getHistograms(files) {
+
+        var count=files.length;
+        $(views.plupload).off('histogram').on('histogram',function(e,file){
+          --count;
+          if (count==0) {
+            $.each(plupload.files,function(i){
+              if (i>0) {
+                var result=plupload.files[i].histogram.compare({
+                  type: 'correlation',
+                  histogram: plupload.files[i-1].histogram
+                });
+                var result2=plupload.files[i].histogram.compare({
+                  type: 'euclidian',
+                  histogram: plupload.files[i-1].histogram
+                });
+                var total=Math.sqrt(Math.pow(result[0],2)+Math.pow(result[1],2)+Math.pow(result[2],2));
+                console.log($('#'+plupload.files[i-1].id)[0],$('#'+plupload.files[i].id)[0],result[0],result2[0]);
+              }
+            });
+          }
+        });
+
+        $.each(files,function(){
+
+          var file=this;
+          var reader=new FileReader();
+
+          reader.onload=function(e) {
+            var img=new Image();
+
+            img.onload=function(e) {
+
+                file.histogram=new Histogram({
+                  type: 'hsv',
+                  img: e.target
+                });
+
+                console.log(file);
+
+                $(views.plupload).trigger('histogram',[file]);
+
+            } // img.onload
+
+            img.src=e.target.result;
+
+          } // reader.onload
+
+          reader.readAsDataURL(file.getNative());
+
+        }); // each files
+
+    } // views.plupload.getHistograms
 
   }), // views.plupload
 
@@ -1405,4 +1466,3 @@ var webapp={
   } // webapp.onready
 
 } // webapp
-
