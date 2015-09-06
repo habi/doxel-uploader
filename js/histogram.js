@@ -84,7 +84,7 @@ $.extend(true,Histogram.prototype,{
       canvas.height=(histogram.width)?histogram.width/img.width*img.height:img.height;
 
       var ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
       var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
 
@@ -195,30 +195,39 @@ $.extend(true,Histogram.prototype,{
 
           return [Math.abs(denom2)>(Number.EPSILON||2e-16)?num/Math.sqrt(denom2):1];
 
-        case 'euclidian':
+        case 'chi-square-custom':
         default:
-          var Hsum=0;
+          var Hsum11=0;
+          var Hsum12=0;
           for(var hi=0; hi<=hueSteps; ++hi) {
-            var dh=Math.abs(H[hi]-H2[hi]);
-            Hsum+=dh*dh;
+            var a=H[hi];
+            var dh=Math.abs(a-H2[hi]);
+            Hsum11+=a*a;
+            Hsum12+=dh*dh;
           }
 
-          var Ssum=0;
+          var Ssum11=0;
+          var Ssum12=0;
           for(var si=0; si<=satSteps; ++si) {
-            var ds=Math.abs(S[si]-S2[si]);
-            Ssum+=ds*ds;
+            var a=S[si];
+            var ds=Math.abs(a-S2[si]);
+            Ssum11+=a*a;
+            Ssum12+=ds*ds;
           }
 
-          var Vsum=0;
+          var Vsum11=0;
+          var Vsum12=0;
           for(var vi=0; vi<=valSteps; ++vi) {
-            var dv=Math.abs(V[vi]-V2[vi]);
-            Vsum+=dv*dv;
+            var a=V[vi];
+            var dv=Math.abs(a-V2[vi]);
+            Vsum11+=a*a;
+            Vsum12+=dv*dv;
           }
 
           return [
-            (Hsum)?Math.sqrt(Hsum):0,
-            (Ssum)?Math.sqrt(Ssum):0,
-            (Vsum)?Math.sqrt(Vsum):0
+            (Hsum11)?Hsum12/(Hsum11*2):Hsum12,
+            (Ssum11)?Ssum12/(Ssum11*2):Ssum12,
+            (Vsum11)?Vsum12/(Vsum11*2):Vsum12
           ];
       }
 

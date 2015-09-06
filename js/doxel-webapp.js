@@ -787,15 +787,16 @@ var views={
             $.each(plupload.files,function(i){
               if (i>0) {
                 var result=plupload.files[i].histogram.compare({
-                  type: 'correlation',
+                  type: 'chi-square-custom',
                   histogram: plupload.files[i-1].histogram
                 });
                 var result2=plupload.files[i].histogram.compare({
-                  type: 'euclidian',
+                  type: 'correlation',
                   histogram: plupload.files[i-1].histogram
                 });
                 var total=Math.sqrt(Math.pow(result[0],2)+Math.pow(result[1],2)+Math.pow(result[2],2));
-                console.log($('#'+plupload.files[i-1].id)[0],$('#'+plupload.files[i].id)[0],result[0],result2[0]);
+                console.log($('#'+plupload.files[i-1].id)[0],$('#'+plupload.files[i].id)[0]);
+                console.log('chi-square-custom total:',total,'hsv:',result[0],result[1],result[2],'correlation:',result2[0]);
               }
             });
           }
