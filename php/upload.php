@@ -1,5 +1,4 @@
 <?php
-include "cookies.inc";
 /**
  * upload.php
  *
@@ -12,6 +11,8 @@ include "cookies.inc";
  * Modified by Rurik Bogdanov <rurik.bugdanov@alsenet.com>
  *
  */
+
+include "auth.inc";
 
 // Make sure file is not cached (as it happens for example on iOS devices)
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
@@ -32,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 include('upload.config.inc');
 
 // get user id, check for hexadecimal only
-$userDirectory = $_COOKIE['fingerprint'];
+$userDirectory = $token;
 if (!preg_match('/^[0-9A-Fa-f]+$/', $userDirectory)) {
   die('{"jsonrpc" : "2.0", "error" : {"code": 900, "message": "Invalid user id."}, "id" : "id"}');
 }
@@ -43,7 +44,11 @@ if (!preg_match('/^[0-9]{10}_[0-9]{6}$/', $timestamp)) {
     die('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid timestamp."}, "id" : "id"}');
 }                                   
 
-$targetDir = getTargetDir($userDirectory,$timestamp);
+$lon = isset($_REQUEST['lon'])?$_REQUEST['lon']:NULL;
+$lat = isset($_REQUEST['lat'])?$_REQUEST['lat']:NULL;
+
+$target = getTargetSegment($userDirectory, $timestamp, $lon, $lat);
+$targetDir=$target['dir'] . DIRECTORY_SEPARATOR . $target['segment'];
 
 // Create tmp dir
 if (!file_exists($tmpDir)) {
@@ -183,6 +188,17 @@ if (!$chunks || $chunk == $chunks - 1) {
       ++$num;
   }
 
+  $s=$pdo->prepare('INSERT INTO pictures(user, timestamp, segment, lon, lat) VALUES(:user, FROM_UNIXTIME(:timestamp), FROM_UNIXTIME(:segment), :lon, :lat)');
+  if (!$s->execute(array(
+    ":user" => $userid,
+    ":timestamp" => str_replace('_','.',$timestamp),
+    ":segment" => str_replace('_','.',$target['segment']),
+    ":lon" => $lon,
+    ":lat" => $lat
+  ))) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 912, "message": "Could not register file in database."}, "id" : "id"}');
+  }
+
 	// Move and strip the temp .part suffix off 
   if (!rename($tmpFilename, $destFilename)) {
       die('{"jsonrpc" : "2.0", "error" : {"code": 905, "message": "Could not move temporary file to destination."}, "id" : "id"}');
@@ -190,4 +206,4 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 // Return Success JSON-RPC response
-die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
+die('{"jsonrpc" : "2.0", "success" : 1, "id" : "id"}');

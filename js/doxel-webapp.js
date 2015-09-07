@@ -1,5 +1,5 @@
 /*
- * main.js
+ * doxel-webapp.js
  *
  * Copyright (c) 2015 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
@@ -128,8 +128,12 @@ var views={
       * @method views.plupload.uploaderEvents.Error
       *
       */
-      Error: function views_plupload_uploaderEvents_Error(){
+      Error: function views_plupload_uploaderEvents_Error(uploader,error){
         console.log('Error',arguments);
+        if (error.code!=-602) { // no alert here on duplicate file error
+            alert(error.message);
+            uploader.stop();
+        }
       },
 
       /**
@@ -243,7 +247,7 @@ var views={
         // set default timestamp to file modification date
         var timestamp=String(file.getNative().lastModified).replace(/([0-9]{10})/,'$1_')+'000';
 
-        // try to get timestamp from EXIF data instead
+        // try to extract timestamp and GPS coordinates from EXIF
         loadImage.parseMetaData(
 
           // File object
@@ -252,9 +256,11 @@ var views={
           // parseMetadata callback
           function(data){
             var date_str;
+            var lon,lat;
 
             if (data && data.exif) {
 
+              // try to get date from EXIF
               try {
                 date_str=data.exif.get('DateTimeOriginal');
               } catch(e) {
@@ -262,6 +268,8 @@ var views={
               }
 
               if (date_str) {
+
+                // try to convert date to numerical timestamp
                 try {
                   var _timestamp=new Date(date_str.replace(/([0-9]{4}):([0-9]{2}):([0-9]{2})/,"$1/$2/$3")).getTime();
 
@@ -285,12 +293,49 @@ var views={
                   console.log(date_str,e);
                 }
               }
+
+              // get GPS coordinates
+              try {
+                var dms=data.exif.get('GPSLongitude');
+                if (dms) {
+                  // convert to decimal
+                  lon=parseInt(dms[0])+parseInt(dms[1])/60+parseInt(dms[2])/3600;
+
+                  // set negative value for west coordinate
+                  if (data.exif.get('GPSLongitudeRef')=='W') {
+                    lon=-Math.abs(lon);
+                  }
+
+                }
+              } catch(e) {
+                console.log(e);
+              }
+
+              try {
+                var dms=data.exif.get('GPSLatitude');
+
+                if (dms) {
+                  // convert to signed decimal
+                  lat=parseInt(dms[0])+parseInt(dms[1])/60+parseInt(dms[2])/3600;
+
+                  // set negative value for south coordinate
+                  if (data.exif.get('GPSLatitudeRef')=='S') {
+                    lat=-Math.abs(lat);
+                  }
+
+                }
+
+              } catch(e) {
+                console.log(e);
+              }
+
             }
 
             // set metadata to be uploaded
             uploader.setOption('multipart_params',{
               timestamp: timestamp,
-              user: webapp.fingerprint
+              lon: lon,
+              lat: lat
             });
 
             // start upload
@@ -317,6 +362,9 @@ var views={
       */
       FileUploaded: function views_plupload_uploaderEvents_FileUploaded(uploader,file,info){
 
+          var failed;
+          var message;
+
           var $file = $('#'+file.id);
 
           // get upload.php response
@@ -340,20 +388,33 @@ var views={
                 return;
             }
 
+            failed=true;
+            message=response.error.message;
+
+          } else {
+
+            if (response.success) {
+               // remove DOM element after upload
+               $file.remove();
+
+            } else {
+              // upload failed
+              failed=true;
+              message="A server error occured.";
+
+            }
+          }
+
+          if (failed) {
             // set file status icon
             file.status=plupload.FAILED;
             file._handleFileStatus(file);
 
             // set file status icon text
-            $('.plupload_action_icon',$file).attr('title',response.error.message);
+            $('.plupload_action_icon',$file).attr('title',message);
 
-            alert(response.error.message);
+            alert(message);
             uploader.stop();
-
-          } else {
-             // remove DOM element after upload
-             $file.remove();
-
           }
 
       }, // views.plupload.uploaderEvents.FileUploaded
@@ -1081,48 +1142,84 @@ var views={
   }), // views.upload
 
   /**
-   *  @property views.authentification
+   *  @property views.authentication
    *
    *  @TODO
    *
    * view to display the login/signup form
    *
    */
-  authentification: new View({
+  authentication: new View({
 
     /**
-     * @property views.authentification.url
+     * @property views.authentication.url
      */
-    url: 'authentification.html',
+    url: 'view/authentication.html',
 
     /**
-     * @property views.authentification.container
+     * @property views.authentication.container
      */
-    container: 'div#authentification',
+    container: 'div#authentication',
 
     /**
-     * @method views.authentification.onload
+     * @method views.authentication.onload
      */
-    onload: function views_authentification_onload(){
-      var view=views.authentification;
+    onload: function views_authentication_onload(){
+      var view=views.authentication;
 
-      view.getElem().on(click,'.button',function(e){
+      view.setupEventHandlers();
+
+    }, // views.authentication.onload
+
+    /**
+     * @method views.authentication.setupEventHandlers
+     */
+    setupEventHandlers: function views_authentication_setupEventHandlers(){
+      var view=views.authentication;
+
+      view.getElem().on('click','.button',function(e){
 
         if ($(e.target).hasClass('login')) {
+          view.button_login_click();
         }
 
         if ($(e.target).hasClass('register')) {
+          view.button_register_click();
         }
 
         if ($(e.target).hasClass('recover')) {
+          view.button_recover_click();
         }
-
 
       });
 
-    } // views.authentification.onload
+    }, // views.authentication.setupEventHandlers
 
-  }), // views.authentification
+    /**
+     * @method views.authentication.button_login_click
+     */
+    button_login_click: function views_authentication_button_login_click(){
+      var view=views.authentication;
+
+      if (!view.input_validate()) {
+        return;
+      }
+
+      $.ajax({
+      });
+
+    }, // views.authentication.button_login_click
+
+    /**
+     * @method views.authentication.input_validate
+     */
+    input_validate: function views_authentication_input_validate(){
+      var view=views.authentication;
+
+
+    }, // views.authentication.input_validate
+
+  }), // views.authentication
 
   /**
    * views.registration
@@ -1137,7 +1234,7 @@ var views={
     /**
      * @property views.registration.url
      */
-    url: 'registration.html',
+    url: 'view/registration.html',
 
     /**
      * @property views.registration.container
@@ -1187,7 +1284,8 @@ var webapp={
    */
   defaults: {
     showTermsAndConditions: true,
-    registrationNeeded: false,
+    registrationNeeded: true,
+    cookie_expire: Math.pow(2,31),
     initialView: views.plupload
   },
 
@@ -1208,7 +1306,7 @@ var webapp={
    */
   getBrowserFingerprint: function webapp_getBrowserFingerprint() {
 
-    var fingerprint=$.cookie('fingerprint');
+    var fingerprint=cookie.get('fingerprint');
 
     if (fingerprint) {
       // dont show terms and conditions when fingerprint already defined
@@ -1254,7 +1352,7 @@ var webapp={
   onagree: function webapp_onagree() {
 
     // save fingerprint
-    $.cookie('fingerprint',webapp.fingerprint,Math.pow(2,31));
+    cookie.set('fingerprint',webapp.fingerprint);
 
     // continue
     $(webapp).trigger('login');
@@ -1275,7 +1373,7 @@ var webapp={
       return;
     }
 
-    webapp.authentifyOrRegister();
+    webapp.authenticateOrRegister();
 
   }, // webapp.onlogin
 
@@ -1284,19 +1382,19 @@ var webapp={
    *
    * get local or remote user info
    *
-   * @return {Object|null} webapp.userInfo or null
+   * @param {Function} [callback] callback will be passed userInfo or null
+   *
    */
   getUserInfo: function webapp_getUserInfo(callback) {
-    var webapp=this;
 
-    webapp.getLocalUserInfo(function(success){
+    webapp.getLocalUserInfo(function(userInfo){
 
-      if (success) {
-        callback(success);
+      if (userInfo) {
+        callback(userInfo);
 
       } else {
-         webapp.getRemoteUserInfo(function(success){
-           callback(success);
+         webapp.getRemoteUserInfo(function(userInfo){
+           callback(userInfo);
 
          });
       }
@@ -1309,11 +1407,11 @@ var webapp={
    *
    * get user info from local cookie
    *
-   * @param {Function} [callback] will be passed webapp.userInfo (or null)
+   * @param {Function} [callback] will be receive webapp.userInfo (or null)
    */
   getLocalUserInfo: function webapp_getLocalUserInfo(callback) {
 
-    var json=$.cookie('userinfo');
+    var json=cookie.get('userinfo');
 
     if (json) {
       try {
@@ -1321,7 +1419,6 @@ var webapp={
 
       } catch(e) {
         webapp.userInfo=null;
-
       }
     }
 
@@ -1338,7 +1435,6 @@ var webapp={
    */
   getRemoteUserInfo: function webapp_getRemoteUserInfo(callback) {
 
-    var webapp=this;
     webapp.userInfo=null;
 
     $.ajax({
@@ -1355,7 +1451,7 @@ var webapp={
       success: function(json) {
 
         if (json.error) {
-          alert(json.message);
+          alert(json.error.message);
 
         } else {
           webapp.userInfo=json;
@@ -1374,26 +1470,28 @@ var webapp={
   }, // webapp.getRemoteUserInfo
 
   /**
-   * @method webapp.authentifyOrRegister
+   * @method webapp.authenticateOrRegister
    *
    */
-  authentifyOrRegister: function webapp_authentifyOrRegister() {
-
-    var webapp=this;
+  authenticateOrRegister: function webapp_authenticateOrRegister() {
 
     webapp.getUserInfo(function(success){
 
       if (success) {
-        views.authentification.show();
+// automatic registration/authentification for now
+        cookie.set('token',$.cookie('token'));
+        $(webapp).trigger('ready');
+//        views.authentication.show();
 
       } else {
-        views.registration.show();
+        alert('Authentication failed');
+//        views.registration.show();
 
       }
 
     });
 
-  }, // webapp.authentifyOrRegister
+  }, // webapp.authenticateOrRegister
 
   /**
    * @method webapp.onready
@@ -1405,4 +1503,3 @@ var webapp={
   } // webapp.onready
 
 } // webapp
-
