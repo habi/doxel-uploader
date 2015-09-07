@@ -34,8 +34,8 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
   $targetDir_digits=8; // 99 seconds
 
   // try to aggregate with existing pictures taken +/- 2minutes after/before, and
-  //  new segment if (haveGPS && ( >2min ou >20m)) || (!haveGPS && (>2min))
-  //  same segment if (haveGPS && (<2min ou <20m)) || (!haveGPS && (<2min))
+  //  new segment if (haveGPS && ( >2min and >20m)) || (!haveGPS && (>2min))
+  //  same segment if (haveGPS && (<2min or <20m)) || (!haveGPS && (<2min))
   //
   //  Problems will occur if parts of the segment are uploaded randomly
   //  (eg: uploading the end first, the beginning after, and the middle
@@ -60,6 +60,7 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
       // no gps coords
       if ($row['lon']===NULL || $lon===NULL) {
 
+        // !gps && <2min -> same segment
         return array(
           "dir" =>
             $upload_dir .
@@ -75,6 +76,7 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
         );
 
       } else {
+        /*
         // test if is distance is less than 20m
         $lon2=$row['lon']*M_PI/180;
         $lat2=$row['lat']*M_PI/180;
@@ -82,8 +84,9 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
         $x=($lon2-$lon1)*cos(($lat1+$lat2)/2);
         $y=($lat2-$lat1);
         $d=sqrt($x*$x+$y*$y)*6371000;
+         */
 
-        if ($d<20) {
+      //  if ($d<20) {
           return array(
             "dir" =>
               $upload_dir .
@@ -96,7 +99,7 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
 
             "segment" => $segment
           );
-        }
+      //  }
       }
     }
   }
