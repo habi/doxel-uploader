@@ -21,7 +21,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-/* 
+/*
 // Support CORS
 header("Access-Control-Allow-Origin: *");
 // other CORS headers if any...
@@ -42,7 +42,7 @@ if (!preg_match('/^[0-9A-Fa-f]+$/', $userDirectory)) {
 $timestamp = $_REQUEST['timestamp'];
 if (!preg_match('/^[0-9]{10}_[0-9]{6}$/', $timestamp)) {
     die('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid timestamp."}, "id" : "id"}');
-}                                   
+}
 
 $lon = isset($_REQUEST['lon'])?$_REQUEST['lon']:NULL;
 $lat = isset($_REQUEST['lat'])?$_REQUEST['lat']:NULL;
@@ -175,7 +175,6 @@ if (!$chunks || $chunk == $chunks - 1) {
   }
 
   // check for duplicate timestamp
-  $num=1;
   while(file_exists($destFilename)) {
 
       // throw an error if filesize match too
@@ -183,9 +182,17 @@ if (!$chunks || $chunk == $chunks - 1) {
         die('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '."$originalFilename ({$timestamp}.$mime[1])".'."}, "id" : "id"}');
       }
 
-      // else rename destination file
-      $destFilename="{$destBasename}.{$num}.$mime[1]";
-      ++$num;
+      // else rename destination file (increment microseconds)
+      // duplicate timestamps should mean that timestamp precision is seconds
+
+      // increment timestamp
+      $timestamp=explode('_',basename($destFilename,$mime[1]));
+      $microsecs=str_pad((((int)$timestamp[1])+1),6,"0",STR_PAD_LEFT);
+      $timestamp=$timestamp[0].'_'.$microsecs;
+
+      // set new file name
+      $destBasename = $targetDir . DIRECTORY_SEPARATOR . $timestamp;
+      $destFilename="{$destBasename}.$mime[1]";
   }
 
   $s=$pdo->prepare('INSERT INTO pictures(user, timestamp, segment, lon, lat) VALUES(:user, FROM_UNIXTIME(:timestamp), FROM_UNIXTIME(:segment), :lon, :lat)');
@@ -199,7 +206,7 @@ if (!$chunks || $chunk == $chunks - 1) {
     die('{"jsonrpc" : "2.0", "error" : {"code": 912, "message": "Could not register file in database."}, "id" : "id"}');
   }
 
-	// Move and strip the temp .part suffix off 
+	// Move and strip the temp .part suffix off
   if (!rename($tmpFilename, $destFilename)) {
       die('{"jsonrpc" : "2.0", "error" : {"code": 905, "message": "Could not move temporary file to destination."}, "id" : "id"}');
   }
