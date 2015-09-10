@@ -256,6 +256,7 @@ var views={
           // parseMetadata callback
           function(data){
             var date_str;
+            var subSec;
             var lon,lat;
 
             if (data && data.exif) {
@@ -263,6 +264,8 @@ var views={
               // try to get date from EXIF
               try {
                 date_str=data.exif.get('DateTimeOriginal');
+                subSec=data.exif.get('SubSecTimeOriginal').trim();
+
               } catch(e) {
                 console.log(e);
               }
@@ -278,15 +281,21 @@ var views={
                   }
 
                   if (isNaN(_timestamp)) {
-
                     if (!window.invalidTimestamp) {
                       alert('Could not convert EXIF timestamp. Other occurences will be ignored.');
                       window.invalidTimestamp=true;
                     }
 
                   } else {
-                    timestamp=String(_timestamp).replace(/([0-9]{10})/,'$1_')+'000';
 
+                    if (subSec.length) {
+                      timestamp=timestamp.substr(0,10)+'_'+subSec.substr(0,6);
+                      while(timestamp.length<17) timestamp+='0';
+
+                    } else {
+                      timestamp=String(_timestamp).replace(/([0-9]{10})/,'$1_')+'000';
+
+                    }
                   }
 
                 } catch(e) {
