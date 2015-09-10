@@ -289,7 +289,7 @@ var views={
                   } else {
 
                     if (subSec.length) {
-                      timestamp=timestamp.substr(0,10)+'_'+subSec.substr(0,6);
+                      timestamp=_timestamp.substr(0,10)+'_'+subSec.substr(0,6);
                       while(timestamp.length<17) timestamp+='0';
 
                     } else {
