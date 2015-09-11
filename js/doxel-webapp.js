@@ -264,7 +264,7 @@ var views={
               // try to get date from EXIF
               try {
                 date_str=data.exif.get('DateTimeOriginal');
-                subSec=data.exif.get('SubSecTimeOriginal').trim();
+                subSec=data.exif.get('SubSecTimeOriginal');
 
               } catch(e) {
                 console.log(e);
@@ -288,8 +288,8 @@ var views={
 
                   } else {
 
-                    if (subSec.length) {
-                      timestamp=_timestamp.substr(0,10)+'_'+subSec.substr(0,6);
+                    if (subSec) {
+                      timestamp=_timestamp.substr(0,10)+'_'+subSec.trim().substr(0,6);
                       while(timestamp.length<17) timestamp+='0';
 
                     } else {
@@ -340,15 +340,83 @@ var views={
 
             }
 
-            // set metadata to be uploaded
-            uploader.setOption('multipart_params',{
-              timestamp: timestamp,
-              lon: lon,
-              lat: lat
-            });
+            // compute file hash
+            file_hash(file.getNative(),function(result){
 
-            // start upload
-            plupload.onUploadFile.call(this,uploader,file)
+              if (!result.sha256) {
+                alert("Could not compute file hash for "+file.name);
+                uploader.stop();
+                return;
+              }
+
+              // check for hash uniqueness
+              $.ajax({
+                method: 'POST',
+
+                data: {
+                  q: 'uniq',
+                  sha256: result.sha256
+                },
+
+                success: function(json){
+                  if (json.error) {
+                    console.log(json.error);
+
+                    // stop if error is not "duplicate file"
+                    if (json.error.code!=904) {
+                      alert(json.error.message);
+                      uploader.stop();
+                      return;
+                    }
+
+                    // increment dupliate count
+                    ++uploader.file_duplicate_count;
+
+                    // mark as uploaded
+                    file.status=plupload.DONE;
+
+                    // remove DOM element
+                    var $file = $('#'+file.id);
+                    $file.remove();
+
+                    // upload next
+                    setTimeout(function() {
+                      plupload.uploadNext.call(uploader);
+                    }, 1);
+
+                    return;
+                  }
+
+                  if (!json.success) {
+                    alert('Could not check for file hash uniqueness');
+                    uploader.stop();
+                    return;
+                  }
+
+                  // set metadata to be uploaded
+                  uploader.setOption('multipart_params',{
+                    timestamp: timestamp,
+                    lon: lon,
+                    lat: lat,
+                    sha256: result.sha256
+                  });
+
+                  // start upload
+                  plupload.onUploadFile.call(this,uploader,file)
+
+                },
+
+                error: function(json){
+                  if (json.error) {
+                    console.log(json.error);
+                    alert(json.error.message);
+                    uploader.stop();
+                  }
+                }
+
+              }); // ajax
+
+            });
 
           },
 
@@ -381,21 +449,6 @@ var views={
 
           // upload failed
           if (response.error) {
-
-            // marked as duplicate on server side ?
-            if (response.error.code==904) {
-
-                // increment dupliate count
-                ++uploader.file_duplicate_count;
-
-                // mark as uploaded
-                file.status=plupload.DONE;
-
-                // remove DOM element
-                $file.remove();
-
-                return;
-            }
 
             failed=true;
             message=response.error.message;
@@ -573,7 +626,7 @@ var views={
         views: {
           list: true,
           thumbs: true, // Show thumbs
-          active: 'thumbs'
+          default: 'list'
         }
 
       });
@@ -1512,3 +1565,45 @@ var webapp={
   } // webapp.onready
 
 } // webapp
+
+/**
+* @function file_hash
+* @param {File} file - the file to hash
+* @param {Function} callback(reply) - the callback
+*   {String} reply.hash - set on success
+*   {Exception} reply.error - set on error
+*/
+function file_hash(file, callback) {
+
+  // setup file reader
+  var reader=new FileReader();
+  reader.onload=function (e) {
+
+    try {
+
+      var time0=new Date().getTime();
+      var sha256=asmCrypto.SHA256.hex(e.target.result);
+      var time1=new Date().getTime();
+
+      console.log('sha256: '+(time1-time0));
+
+      callback({
+        sha256: sha256
+
+      });
+
+    } catch(e) {
+      console.log(e.message);
+      callback({
+        error: e
+      });
+    }
+
+  }
+
+  // read file
+  reader.readAsArrayBuffer(file);
+
+} // file_hash
+
+

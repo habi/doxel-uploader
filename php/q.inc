@@ -34,49 +34,63 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
-  include "auth.inc";
+include "auth.inc";
+include "utils.inc";
 
-  call_user_func('q_'.$q);
-  exit(0);
+header('Content-type: text/json');
 
-  function q_getUserInfo() {
-    global $token, $fingerprint, $pdo;
+if (!call_user_func('q_'.$q)) {
+  die('{"jsonrpc" : "2.0", "error" : {"code": 702, "message": "Invalid command: '.$q.'"}, "id" : "id"}');
+}
+die('{"jsonrpc" : "2.0", "success" : "1", "id" : "id"}');
 
-    $json="{}";
+function q_getUserInfo() {
+  global $token, $fingerprint, $pdo;
 
-    // get dummy session info for given fingerprint and token
-    $s=$pdo->prepare("SELECT * FROM users WHERE fingerprint = :fingerprint AND pass = :token LIMIT 1");
-    if ($s->execute(array(
-      ':fingerprint' => $fingerprint,
-      ':token' => $token
-    ))) {
+  $json="{}";
 
-      if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
-        setcookie("userid", $row['id'], pow(2,31), '/');
-        $json=json_encode(array(
-          "id" => $row['id']
-        ));
-      }
+  // get dummy session info for given fingerprint and token
+  $s=$pdo->prepare("SELECT * FROM users WHERE fingerprint = :fingerprint AND pass = :token LIMIT 1");
+  if ($s->execute(array(
+    ':fingerprint' => $fingerprint,
+    ':token' => $token
+  ))) {
+
+    if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
+      setcookie("userid", $row['id'], pow(2,31), '/');
+      $json=json_encode(array(
+        "id" => $row['id']
+      ));
     }
-
-    header('content-type: text/json');
-    header('Content-Length: '.strlen($json));
-    echo $json;
-
-  } // q_getUserInfo
-
-  function q_register() {
-    global $token, $fingerprint, $user, $password_minlen;
-
-    if (!isset($_POST['password']) || strlen($_POST['password'])<$password_minLen) {
-      die('{"jsonrpc" : "2.0", "error" : {"code": 701, "message": "Invalid password."}, "id" : "id"}');
-    }
-
-    include "db_config.inc";
-
-    $password=$_POST['password'];
-    $hash=password_hash($token+$user+$password);
-
   }
-  
+
+  header('Content-Length: '.strlen($json));
+  die($json);
+
+} // q_getUserInfo
+
+/**
+* Check sha256 uniqueness
+*/
+function q_uniq() {
+  header('Content-type: text/json');
+  assertUniqueHash($_REQUEST['sha256']);
+  return true;
+
+} // q_uniq
+
+/*
+function q_register() {
+  global $token, $fingerprint, $user, $password_minlen;
+
+  if (!isset($_POST['password']) || strlen($_POST['password'])<$password_minLen) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 701, "message": "Invalid password."}, "id" : "id"}');
+  }
+
+  $password=$_REQUEST['password'];
+  $hash=password_hash($token+$user+$password);
+
+}
+*/
+
 ?>

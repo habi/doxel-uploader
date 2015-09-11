@@ -36,11 +36,8 @@
 
 include('php/cookies.inc');
 
-if (isset($_POST['q'])) {
-  $q=$_POST['q'];
-
-} else if (isset($_GET['q'])) {
-  $q=$_GET['q'];
+if (isset($_REQUEST['q'])) {
+  $q=$_REQUEST['q'];
 
 } else {
   include('php/index.inc');

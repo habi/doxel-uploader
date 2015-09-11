@@ -12,14 +12,17 @@
  *
  */
 
-include "auth.inc";
-
 // Make sure file is not cached (as it happens for example on iOS devices)
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
+
+header("Content-Type: text/json");
+
+include "auth.inc";
+include "utils.inc";
 
 /*
 // Support CORS
@@ -43,6 +46,12 @@ $timestamp = $_REQUEST['timestamp'];
 if (!preg_match('/^[0-9]{10}_[0-9]{6}$/', $timestamp)) {
     die('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid timestamp."}, "id" : "id"}');
 }
+
+// get hash
+$sha256 = $_REQUEST['sha256'];
+
+// check for duplicate hash
+assertUniqueHash($sha256);
 
 $lon = isset($_REQUEST['lon'])?$_REQUEST['lon']:NULL;
 $lat = isset($_REQUEST['lat'])?$_REQUEST['lat']:NULL;
@@ -135,7 +144,7 @@ if (!empty($_FILES)) {
 $contentLength=$_SERVER['CONTENT_LENGTH'];
 $contentSize=0;
 
-while ($buff = fread($in, 4096)) {
+while ($buff = fread($in, 32768)) {
   fwrite($out, $buff);
 
   // check if file size exceed content-size
@@ -174,29 +183,25 @@ if (!$chunks || $chunk == $chunks - 1) {
       die('{"jsonrpc" : "2.0", "error" : {"code": 908, "message": "Target disk is full !"}, "id" : "id"}');
   }
 
-  // check for duplicate timestamp
+  // Duplicate timestamps should mean that timestamp precision is seconds,
+  // so we are renaming duplicate timestamps (ie: incrementing microseconds)
+  // Note that this could lead to some misordering
+  //
   while(file_exists($destFilename)) {
+    // increment timestamp
+    $timestamp=explode('_',basename($destFilename,$mime[1]));
+    $microsecs=str_pad((((int)$timestamp[1])+1),6,"0",STR_PAD_LEFT);
+    $timestamp=$timestamp[0].'_'.$microsecs;
 
-      // throw an error if filesize match too
-      if (filesize($destFilename)==filesize($tmpFilename)) {
-        die('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '."$originalFilename ({$timestamp}.$mime[1])".'."}, "id" : "id"}');
-      }
+    // set new file name
+    $destBasename = $targetDir . DIRECTORY_SEPARATOR . $timestamp;
+    $destFilename="{$destBasename}.$mime[1]";
 
-      // else rename destination file (increment microseconds)
-      // duplicate timestamps should mean that timestamp precision is seconds
-
-      // increment timestamp
-      $timestamp=explode('_',basename($destFilename,$mime[1]));
-      $microsecs=str_pad((((int)$timestamp[1])+1),6,"0",STR_PAD_LEFT);
-      $timestamp=$timestamp[0].'_'.$microsecs;
-
-      // set new file name
-      $destBasename = $targetDir . DIRECTORY_SEPARATOR . $timestamp;
-      $destFilename="{$destBasename}.$mime[1]";
   }
 
-  $s=$pdo->prepare('INSERT INTO pictures(user, timestamp, segment, lon, lat) VALUES(:user, FROM_UNIXTIME(:timestamp), FROM_UNIXTIME(:segment), :lon, :lat)');
+  $s=$pdo->prepare('INSERT INTO pictures(sha256, user, timestamp, segment, lon, lat) VALUES(:sha256, :user, FROM_UNIXTIME(:timestamp), FROM_UNIXTIME(:segment), :lon, :lat)');
   if (!$s->execute(array(
+    ":sha256" => hex2bin($sha256),
     ":user" => $userid,
     ":timestamp" => str_replace('_','.',$timestamp),
     ":segment" => str_replace('_','.',$target['segment']),
