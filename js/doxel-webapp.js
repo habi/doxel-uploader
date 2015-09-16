@@ -245,7 +245,8 @@ var views={
       UploadFile: function views_plupload_uploaderEvents_UploadFile(uploader,file) {
 
         // set default timestamp to file modification date
-        var timestamp=String(file.getNative().lastModified).replace(/([0-9]{10})/,'$1_')+'000';
+        var _file=file.getNative();
+        var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime()).replace(/([0-9]{10})/,'$1_')+'000';
 
         // try to extract timestamp and GPS coordinates from EXIF
         loadImage.parseMetaData(

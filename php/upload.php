@@ -44,7 +44,7 @@ if (!preg_match('/^[0-9A-Fa-f]+$/', $userDirectory)) {
 // get timestamp and check format
 $timestamp = $_REQUEST['timestamp'];
 if (!preg_match('/^[0-9]{10}_[0-9]{6}$/', $timestamp)) {
-    die('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid timestamp."}, "id" : "id"}');
+    die('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid or missing timestamp."}, "id" : "id"}');
 }
 
 // get hash
