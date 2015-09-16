@@ -246,7 +246,7 @@ var views={
 
         // set default timestamp to file modification date
         var _file=file.getNative();
-        var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime()).replace(/([0-9]{10})/,'$1_')+'000';
+        var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime() || (new Date()).getTime()).replace(/([0-9]{10})/,'$1_')+'000';
 
         // try to extract timestamp and GPS coordinates from EXIF
         loadImage.parseMetaData(
