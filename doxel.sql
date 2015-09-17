@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` varchar(254) NOT NULL,
   `fingerprint` char(32) NOT NULL,
   `pass` varchar(32) NOT NULL,
-  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ip` varchar(45) NOT NULL,
   `forwarded_for` varchar(45) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
