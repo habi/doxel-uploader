@@ -290,7 +290,7 @@ var views={
                   } else {
 
                     if (subSec) {
-                      timestamp=_timestamp.substr(0,10)+'_'+subSec.trim().substr(0,6);
+                      timestamp=String(_timestamp).substr(0,10)+'_'+subSec.trim().substr(0,6);
                       while(timestamp.length<17) timestamp+='0';
 
                     } else {
@@ -301,6 +301,7 @@ var views={
 
                 } catch(e) {
                   console.log(date_str,e);
+                  alert(e.message);
                 }
               }
 
@@ -319,6 +320,7 @@ var views={
                 }
               } catch(e) {
                 console.log(e);
+                alert(e.message);
               }
 
               try {
@@ -337,6 +339,7 @@ var views={
 
               } catch(e) {
                 console.log(e);
+                alert(e.message);
               }
 
             }
