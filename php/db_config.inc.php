@@ -3,8 +3,8 @@
 if (!isset($pdo)) {
 
   $db_host="localhost";
-  $db_user="user";
-  $db_pass="pass";
+  $db_user="root";
+  $db_pass="root";
   $db_name="doxel";
 
   try {

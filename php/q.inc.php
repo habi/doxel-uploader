@@ -1,6 +1,6 @@
 <?php
 /*
- * q.inc
+ * q.inc.php
  *
  * Copyright (c) 2015 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
@@ -34,8 +34,8 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
-include "auth.inc";
-include "utils.inc";
+include "auth.inc.php";
+include "utils.inc.php";
 
 header('Content-type: text/json');
 

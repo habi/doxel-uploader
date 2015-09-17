@@ -1,6 +1,6 @@
 <?php
 /*
- * cookies.inc
+ * cookies.inc.php
  *
  * Copyright (c) 2015 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.

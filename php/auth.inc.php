@@ -1,6 +1,6 @@
 <?php
 /*
- * auth.inc
+ * auth.inc.php
  *
  * Copyright (c) 2015 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
@@ -34,8 +34,8 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
-include "db_config.inc";
-include "cookies.inc";
+include "db_config.inc.php";
+include "cookies.inc.php";
 
 // validate fingerprint
 if (!isset($fingerprint) || !eregi('^[0-9a-z]{32}$',$fingerprint)) {

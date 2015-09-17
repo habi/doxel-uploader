@@ -1,6 +1,6 @@
 <?php
 
-include "db_config.inc";
+include "db_config.inc.php";
 
 function assertUniqueHash($sha256) {
   global $pdo;
