@@ -344,8 +344,8 @@ var views={
 
             }
 
-            // compute file hash
-            file_hash(file.getNative(),function(result){
+            // insert copyright and compute file hash
+            file_update(file.getNative(),function(result){
 
               if (!result.sha256) {
                 alert("Could not compute file hash for "+file.name);
@@ -373,7 +373,7 @@ var views={
                       return;
                     }
 
-                    // increment dupliate count
+                    // increment duplicate count
                     ++uploader.file_duplicate_count;
 
                     // mark as uploaded
@@ -405,8 +405,51 @@ var views={
                     sha256: result.sha256
                   });
 
+                  // update file
+                  if (!file.updated) {
+
+                    // convert result.jpeg to ArrayBuffer
+                    var buf=new Uint8Array(result.jpeg.length);
+                    for (var i=0; i< result.jpeg.length; ++i) {
+                      buf[i]=result.jpeg.charCodeAt(i);
+                    }
+
+                    // convert ArrayBuffer to Blob
+                    var blob=new Blob([buf],{type:'image/jpeg'});
+                    blob.name=file.name;
+
+                    // convert to plupload/moxie tainted File
+                    var filesAdded=uploader.addFile(blob);
+                    var newfile=filesAdded[0];
+
+                    // copy file properties
+                    newfile._handleFileStatus=file._handleFileStatus;
+                    newfile.status=plupload.UPLOADING;
+                    newfile.sha256=result.sha256;
+
+                    // flag file as updated
+                    newfile.updated=true;
+
+                    for (var i=0; i<plupload.files.length; ++i) {
+                      if (file.id==plupload.files[i].id) {
+                        // replace old file entry value in plupload queue
+                        plupload.files[i]=newfile;
+
+                        // remove newfile array entry in plupload queue
+                        plupload.files.splice(newfile._insertBefore,1);
+                        break;
+                      }
+                    }
+
+                    // replace gui list element
+                    $('#'+file.id).replaceWith($('#'+newfile.id));
+
+                    // use newfile instead of original one
+                    file=newfile;
+                  }
+
                   // start upload
-                  plupload.onUploadFile.call(this,uploader,file)
+                  plupload.onUploadFile.call(this,uploader,file);
 
                 },
 
@@ -414,8 +457,12 @@ var views={
                   if (json.error) {
                     console.log(json.error);
                     alert(json.error.message);
-                    uploader.stop();
+
+                  } else {
+                    alert('Could not check for file hash uniqueness');
+
                   }
+                  uploader.stop();
                 }
 
               }); // ajax
@@ -1610,4 +1657,54 @@ function file_hash(file, callback) {
 
 } // file_hash
 
+function file_update(file,callback) {
 
+  // skip already updated file
+  if (file.updated) {
+    callback({
+      updated: true,
+      sha256: file.sha256
+    });
+    return;
+  }
+
+  // setup file reader
+  var reader=new FileReader();
+  reader.onload=function (e) {
+
+    var exif={};
+
+    showtime('load exif',function(){
+      exif  = piexif.load(e.target.result);
+    });
+    console.log(exif);          
+
+    exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";
+
+    var jpeg;
+
+    showtime('new jpeg',function(){
+      var bytes=piexif.dump(exif);
+      jpeg=piexif.insert(bytes,e.target.result);
+    });
+
+    var sha256;
+    showtime('sha256',function(){
+      sha256=asmCrypto.SHA256.hex(jpeg);
+      console.log(sha256);
+    });
+
+    callback({
+      jpeg: jpeg,
+      sha256: sha256
+    });
+  }
+  reader.readAsBinaryString(file);
+}
+
+function showtime(str,func) {
+  var time0=new Date().getTime();
+  func();
+  var time1=new Date().getTime();
+  console.log(str+': '+(time1-time0));
+}

@@ -17,6 +17,7 @@
     <script type="text/javascript" src="js/thirdparty/blueimp-load-image/js/load-image-ios.js"></script>
     <script type="text/javascript" src="js/thirdparty/blueimp-load-image/js/load-image-exif.js"></script>
     <script type="text/javascript" src="js/thirdparty/blueimp-load-image/js/load-image-exif-map.js"></script>
+    <script type="text/javascript" src="js/thirdparty/piexifjs/piexif.js"></script>
     <script type="text/javascript" src="js/thirdparty/plupload/js/moxie.js"></script>
     <script type="text/javascript" src="js/thirdparty/plupload/js/plupload.dev.js"></script>
     <script type="text/javascript" src="js/thirdparty/plupload/js/jquery.ui.plupload/jquery.ui.plupload.js"></script>

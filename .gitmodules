@@ -14,3 +14,6 @@
 [submodule "css/thirdparty/Font-Awesome"]
 	path = css/thirdparty/Font-Awesome
 	url = https://github.com/FortAwesome/Font-Awesome.git
+[submodule "js/thirdparty/piexifjs"]
+	path = js/thirdparty/piexifjs
+	url = https://github.com/hMatoba/piexifjs.git
