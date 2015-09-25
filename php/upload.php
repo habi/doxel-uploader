@@ -57,7 +57,7 @@ $lon = isset($_REQUEST['lon'])?$_REQUEST['lon']:NULL;
 $lat = isset($_REQUEST['lat'])?$_REQUEST['lat']:NULL;
 
 $target = getTargetSegment($userDirectory, $timestamp, $lon, $lat);
-$targetDir=$target['dir'] . DIRECTORY_SEPARATOR . $target['segment'];
+$targetDir=$target['dir'] . DIRECTORY_SEPARATOR . $target['segment'] . DIRECTORY_SEPARATOR . 'original_images';
 
 // Create tmp dir
 if (!file_exists($tmpDir)) {
