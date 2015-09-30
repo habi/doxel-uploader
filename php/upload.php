@@ -21,8 +21,8 @@ header("Pragma: no-cache");
 
 header("Content-Type: text/json");
 
-include "auth.inc";
-include "utils.inc";
+include "auth.inc.php";
+include "utils.inc.php";
 
 /*
 // Support CORS
