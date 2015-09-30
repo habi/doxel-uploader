@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 */
 
-include('upload.config.inc');
+include('upload.config.inc.php');
 
 // get user id, check for hexadecimal only
 $userDirectory = $token;
