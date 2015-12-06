@@ -1,0 +1,2 @@
+#!/bin/bash
+grep code.: /var/www/doxel-webapp/php/ -R | sed -r -n -e 's/.*\{"code":.([0-9]{3}).*"message": ([^\}]+).*/\1 \2/p' | sort -u
