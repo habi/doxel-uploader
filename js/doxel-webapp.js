@@ -34,6 +34,12 @@
  */
 
 $(document).ready(function(){
+    if (cookie.get('reload')) {
+        cookie.unset('reload');
+        window.location=window.location.href;
+        return;
+    }
+
     webapp.init();
 });
 
@@ -1282,6 +1288,27 @@ var views={
 
       view.setupEventHandlers();
 
+      // for saving password with firefox / chrome ...
+      if (!window.webkitURL) {
+          $('form',view.getElem()).attr('action',document.location.href);
+      }
+
+      window.__alert=window.alert;
+      window.alert=function(){
+          console.trace('alert');
+          return window.__alert.apply(window,Array.prototype.slice.call(arguments));
+      }
+
+      if (webapp.userInfo && webapp.userInfo.token) {
+          // username and password should be overriden by the browser if the password was saved
+          $('#username, #fingerprint',view.getElem()).val(webapp.userInfo.fingerprint);
+          $('#password, #token',view.getElem()).val(webapp.userInfo.token);
+          if (webapp.userInfo.isnewuser) {
+              cookie.set('reload',true);
+              view.getElem().find('form')[0].submit();
+          }
+      }
+
     }, // views.authentication.onload
 
     /**
@@ -1290,20 +1317,52 @@ var views={
     setupEventHandlers: function views_authentication_setupEventHandlers(){
       var view=views.authentication;
 
-      view.getElem().on('click','.button',function(e){
+      view.getElem()
+      .on('mouseenter', '#password', function(e){
+          $(e.target).attr('type','text');
+      })
+      .on('mouseleave', '#password', function(e) {
+          $(e.target).attr('type','password');
+      })
+      .on('click','.button',function(e){
 
         if ($(e.target).hasClass('login')) {
-          view.button_login_click();
+          view.button_login_click(e);
         }
 
         if ($(e.target).hasClass('register')) {
-          view.button_register_click();
+          view.button_register_click(e);
         }
 
         if ($(e.target).hasClass('recover')) {
-          view.button_recover_click();
+          view.button_recover_click(e);
         }
 
+      })
+      .on('submit', 'form', function(e) {
+          var pathname=document.location.pathname;
+
+          cookie.set('token',$.cookie('token'));
+/*
+          if (window.webkitURL) {
+              // disable form submit for webkit based browser
+              e.preventDefault();
+
+              // play with history to save password with without reloading page.
+              setTimeout(function(){
+                  window.history.replaceState({login: true}, 'Login successful', "success.html");
+                  window.history.replaceState({login: true}, '', pathname);
+              });
+
+          } else {
+          */
+              // with firefox you cannot play with history, yu must redirect to
+              // the form action url so that the browser save the password.
+              // So set 'reload' cookie, and check it on document ready
+              // to reload the page with a GET and avoid the 'resend post data'
+              // dialog on refresh
+              cookie.set('reload',true);
+//          }
       });
 
     }, // views.authentication.setupEventHandlers
@@ -1311,15 +1370,14 @@ var views={
     /**
      * @method views.authentication.button_login_click
      */
-    button_login_click: function views_authentication_button_login_click(){
+    button_login_click: function views_authentication_button_login_click(e){
       var view=views.authentication;
 
       if (!view.input_validate()) {
         return;
       }
 
-      $.ajax({
-      });
+      $('form',view.getElem()).submit();
 
     }, // views.authentication.button_login_click
 
@@ -1328,6 +1386,7 @@ var views={
      */
     input_validate: function views_authentication_input_validate(){
       var view=views.authentication;
+      return true;
 
 
     }, // views.authentication.input_validate
@@ -1407,9 +1466,24 @@ var webapp={
    */
   init: function webapp_init(options) {
     $.extend(true,webapp,webapp.defaults,options);
+    // TODO: watch for infinite loop
+    if (cookie.get('authenticate_again')) { 
+        webapp.logout();
+        cookie.unset('authenticate_again');
+    }
     webapp.getBrowserFingerprint();
 
   }, // webapp.init
+
+  /**
+   * @method webapp.logout
+   */
+  logout: function webapp_logout() {
+        cookie.unset('fingerprint');
+        cookie.unset('token');
+        cookie.unset('userinfo');
+
+  }, // webapp.logout
 
   /**
    * @method webapp.getBrowserFingerprint
@@ -1500,17 +1574,13 @@ var webapp={
    */
   getUserInfo: function webapp_getUserInfo(callback) {
 
-    webapp.getLocalUserInfo(function(userInfo){
+    webapp.getLocalUserInfo(function(localUserInfo){
 
-      if (userInfo) {
-        callback(userInfo);
-
-      } else {
          webapp.getRemoteUserInfo(function(userInfo){
-           callback(userInfo);
+
+           callback($.extend(true,{},localUserInfo,userInfo));
 
          });
-      }
     });
 
   }, // webapp.getUserInfo
@@ -1529,17 +1599,56 @@ var webapp={
     if (json) {
       try {
         webapp.userInfo=JSON.parse(json);
+        webapp.userInfo.isnewuser=false;
 
       } catch(e) {
         webapp.userInfo=null;
       }
     }
 
-    if (callback) {
-      callback(webapp.userInfo);
+    if (!webapp.userInfo) {
+        webapp.getSavedCredentials(callback);
+    } else {
+        if (callback) {
+            callback(webapp.userInfo);
+        }
     }
 
+
   }, // webapp.getLocalUserInfo
+
+  /**
+   * @method webapp.getSavedCredentials
+   *
+   * display the (invisible) login dialog and wait one second, then
+   * restore authentication cookies if the form inputs have been 
+   * autocompleted by the browser.
+   *
+   */
+  getSavedCredentials: function(callback) {
+
+    var view=views.authentication;
+//    view.hidden=true;
+    $(view).on('load.getSavedCredentials',function(){
+        //$(view).off('load.getSavedCredentials');
+        console.log('getsaved');
+        setTimeout(function(){
+            var token=view.getElem().find('#password').val();
+            var fingerprint=view.getElem().find('#username').val();
+            if (token && fingerprint) {
+                cookie.set('token',token);
+                cookie.set('fingerprint',fingerprint);
+            }
+            console.log(token,fingerprint);
+            view.getElem().remove();
+            if (callback) {
+                callback(webapp.userInfo);
+            }
+        },1000);
+    });
+    view.show();
+
+  }, // webapp.getSavedCredentials
 
   /**
    * @method webapp.getRemoteUserInfo
@@ -1588,18 +1697,24 @@ var webapp={
    */
   authenticateOrRegister: function webapp_authenticateOrRegister() {
 
-    webapp.getUserInfo(function(success){
+    webapp.getUserInfo(function(userInfo){
 
-      if (success) {
-// automatic registration/authentification for now
-        cookie.set('token',$.cookie('token'));
-        $(webapp).trigger('ready');
-//        views.authentication.show();
+      if (userInfo) {
+        webapp.userInfo=userInfo;
+        cookie.set('userinfo',JSON.stringify(userInfo));
+        if (userInfo.isnewuser) {
+            // the new user is automatically logged in but
+            // show the login page to allow saving password in browser
+            // and/or to specify an email adresss
+            views.authentication.show();
+        } else {
+            $(webapp).trigger('ready');
+        }
 
       } else {
+        cookie.set('authenticate_again', true);
         alert('Authentication failed');
-//        views.registration.show();
-
+        document.location=document.location.href;
       }
 
     });

@@ -36,6 +36,14 @@
 var cookie={
 
   /**
+  * @object cookie.defaults
+  */
+  defaults: {
+      expire: Math.pow(2,31), /* 2038-01-19 04:14:07 */
+      path: '/'
+  },
+
+  /**
   * @method cookie.get
   *
   * Return requested cookie value from cookies or localStorage.
@@ -83,12 +91,14 @@ var cookie={
   *
   * @param {String} [name] cookie name
   * @param {Object] [value] cookie value
-  * @param {Number} [expire] cookie expiration timestamp, defaults to cookie.expire
+  * @param {Object} [options] cookie options
+  *     @param {Number} [timestamp] cookie expiration timestamp, defaults to pow(2,31)
+  *     @param {String} [path] path where the cookie is visible, defaults to '/'
   *
   */
-  set: function cookie_set(name,value,expire) {
+  set: function cookie_set(name,value,options) {
 
-    $.cookie(name,value,expire||cookie.expire);
+    $.cookie(name,value,$.extend({},cookie.defaults,options));
 
     if (localStorage) {
       localStorage[name]=value;
@@ -104,9 +114,9 @@ var cookie={
   * @param {String} [name] cookie name
   *
   */
-  unset: function cookie_unset(name,value,expire) {
+  unset: function cookie_unset(name,options) {
 
-    $.removeCookie(name);
+    $.removeCookie(name,$.extend({path: cookie.defaults.path},options));
 
     if (localStorage) {
       delete localStorage[name];

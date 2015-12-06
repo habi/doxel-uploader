@@ -34,6 +34,7 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+
 include "auth.inc.php";
 include "utils.inc.php";
 
@@ -45,7 +46,7 @@ if (!call_user_func('q_'.$q)) {
 die('{"jsonrpc" : "2.0", "success" : "1", "id" : "id"}');
 
 function q_getUserInfo() {
-  global $token, $fingerprint, $pdo;
+  global $token, $fingerprint, $pdo, $isnewuser;
 
   $json="{}";
 
@@ -59,7 +60,11 @@ function q_getUserInfo() {
     if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
       setcookie("userid", $row['id'], pow(2,31), '/');
       $json=json_encode(array(
-        "id" => $row['id']
+          "id" => $row['id'],
+          "isnewuser" => $isnewuser,
+          "token" => $token,
+          "fingerprint" => $fingerprint
+
       ));
     }
   }
