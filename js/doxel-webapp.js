@@ -34,6 +34,9 @@
  */
 
 $(document).ready(function(){
+    // reload page with GET after login form POST
+    // (needed to save credentials with browser)
+    // to avoid 're-post data' warning dialog on refresh
     if (cookie.get('reload')) {
         cookie.unset('reload');
         window.location=window.location.href;
