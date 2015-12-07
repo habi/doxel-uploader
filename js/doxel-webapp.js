@@ -39,6 +39,11 @@ $(document).ready(function(){
     // to avoid 're-post data' warning dialog on refresh
     if (cookie.get('reload')) {
         cookie.unset('reload');
+        if (cookie.get('reload')) {
+            console.log('error: reload: cookie could not be deleted');
+            alert('unexpected error');
+            return;
+        }
         window.location=window.location.href;
         return;
     }
@@ -1473,6 +1478,11 @@ var webapp={
     if (cookie.get('authenticate_again')) { 
         webapp.logout();
         cookie.unset('authenticate_again');
+        if (cookie.get('authenticate_again')) {
+            console.log('error: authenticate_again: cookie could not be deleted');
+            alert('unexpected error');
+            return;
+        }
     }
     webapp.getBrowserFingerprint();
 

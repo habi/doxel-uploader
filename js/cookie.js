@@ -116,7 +116,7 @@ var cookie={
   */
   unset: function cookie_unset(name,options) {
 
-    $.removeCookie(name,$.extend({path: cookie.defaults.path},options));
+    $.cookie(name,'',$.extend({path: cookie.defaults.path},options,{expires: -1}));
 
     if (localStorage) {
       delete localStorage[name];
