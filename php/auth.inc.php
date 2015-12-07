@@ -39,7 +39,7 @@ include "cookies.inc.php";
 
 // validate fingerprint
 if (!isset($fingerprint) || !eregi('^[0-9a-z]{32}$',$fingerprint)) {
-  setcookie("authenticate_again", true, pow(2,31), '/');
+  setcookie("authenticate_again", true, pow(2,31), '../');
   die('{"jsonrpc" : "2.0", "error" : {"code": 909, "message": "Invalid or missing fingerprint."}, "id" : "id"}');
 }
 
@@ -53,10 +53,10 @@ if (isset($token) && eregi('^[0-9a-z]{32}$',$token)) {
     ':token' => $token
   ))){
     if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
-      setcookie( "userid", $row['id'], pow(2,31) /* 2038-01-19 04:14:07 */, '/');
+      setcookie( "userid", $row['id'], pow(2,31) /* 2038-01-19 04:14:07 */, '../');
 
     } else {
-      setcookie("authenticate_again", true, pow(2,31), '/');
+      setcookie("authenticate_again", true, pow(2,31), '../');
       die('{"jsonrpc" : "2.0", "error" : {"code": 910, "message": "Access denied. Try to reload page or clear saved passwords."}, "id" : "id"}');
 
     }
@@ -90,7 +90,7 @@ if (isset($fingerprint) && (!isset($token) || !eregi('^[0-9a-z]{32}$',$token))) 
   ));
   $userid=$pdo->lastInsertId();
 
-  setcookie( "token", $token, pow(2,31) /* 2038-01-19 04:14:07 */, '/');
+  setcookie( "token", $token, pow(2,31) /* 2038-01-19 04:14:07 */, '../');
   $isnewuser=true;
 
 } else {

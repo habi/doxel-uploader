@@ -40,7 +40,7 @@ var cookie={
   */
   defaults: {
       expire: Math.pow(2,31), /* 2038-01-19 04:14:07 */
-      path: '/'
+      path: './'
   },
 
   /**

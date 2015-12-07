@@ -58,7 +58,7 @@ function q_getUserInfo() {
   ))) {
 
     if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
-      setcookie("userid", $row['id'], pow(2,31), '/');
+      setcookie("userid", $row['id'], pow(2,31), '../');
       $json=json_encode(array(
           "id" => $row['id'],
           "isnewuser" => $isnewuser,

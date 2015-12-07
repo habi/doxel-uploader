@@ -33,6 +33,12 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+window.__alert=window.alert;
+window.alert=function(){
+  console.trace('alert');
+  return window.__alert.apply(window,Array.prototype.slice.call(arguments));
+}
+
 $(document).ready(function(){
     // reload page with GET after login form POST
     // (needed to save credentials with browser)
@@ -1271,9 +1277,7 @@ var views={
   /**
    *  @property views.authentication
    *
-   *  @TODO
-   *
-   * view to display the login/signup form
+   * view to display the login form
    *
    */
   authentication: new View({
@@ -1289,10 +1293,12 @@ var views={
     container: 'div#authentication',
 
     /**
-     * @method views.authentication.onload
+     * @method views.authentication.onready
      */
-    onload: function views_authentication_onload(){
+    onready: function views_authentication_onload(){
       var view=views.authentication;
+
+      $(view.container).css('visibility',view.hidden?'hidden':'visible');
 
       view.setupEventHandlers();
 
@@ -1301,20 +1307,13 @@ var views={
           $('form',view.getElem()).attr('action',document.location.href);
       }
 
-      window.__alert=window.alert;
-      window.alert=function(){
-          console.trace('alert');
-          return window.__alert.apply(window,Array.prototype.slice.call(arguments));
-      }
-
-      if (webapp.userInfo && webapp.userInfo.token) {
+      if (view.submit) {
           // username and password should be overriden by the browser if the password was saved
           $('#username, #fingerprint',view.getElem()).val(webapp.userInfo.fingerprint);
           $('#password, #token',view.getElem()).val(webapp.userInfo.token);
-          if (webapp.userInfo.isnewuser) {
-              cookie.set('reload',true);
-              view.getElem().find('form')[0].submit();
-          }
+          cookie.set('reload',true);
+          view.submit=false;
+          view.getElem().find('form')[0].submit();
       }
 
     }, // views.authentication.onload
@@ -1338,13 +1337,14 @@ var views={
           view.button_login_click(e);
         }
 
-        if ($(e.target).hasClass('register')) {
+        if ($(e.target).hasClass('signup')) {
           view.button_register_click(e);
         }
-
+/*
         if ($(e.target).hasClass('recover')) {
           view.button_recover_click(e);
         }
+        */
 
       })
       .on('submit', 'form', function(e) {
@@ -1376,6 +1376,18 @@ var views={
     }, // views.authentication.setupEventHandlers
 
     /**
+     * @method views.authentication.button_register_click
+     */
+    button_register_click: function views_authentication_button_register_click(e){
+      e.preventDefault();
+      views.authentication.jqXHR=null;
+      views.authentication.getElem().remove();
+      webapp.logout();
+      views.termsAndConditions.show();
+
+    }, // views.authentication.button_register_click
+
+    /**
      * @method views.authentication.button_login_click
      */
     button_login_click: function views_authentication_button_login_click(e){
@@ -1385,7 +1397,16 @@ var views={
         return;
       }
 
-      $('form',view.getElem()).submit();
+      cookie.set('token', $('#password',view.getElem()).val());
+      cookie.set('fingerprint', $('#username',view.getElem()).val());
+      webapp.userInfo={
+          token: $('#password',view.getElem()).val(),
+          fingerprint: $('#username',view.getElem()).val()
+      };
+      cookie.set('userinfo',JSON.stringify(webapp.userInfo));
+
+      cookie.set('reload',true);
+      $('form',view.getElem())[0].submit();
 
     }, // views.authentication.button_login_click
 
@@ -1399,49 +1420,7 @@ var views={
 
     }, // views.authentication.input_validate
 
-  }), // views.authentication
-
-  /**
-   * views.registration
-   *
-   * @TODO
-   *
-   * view to display login/signup dialog
-   *
-   */
-  registration: new View({
-
-    /**
-     * @property views.registration.url
-     */
-    url: 'view/registration.html',
-
-    /**
-     * @property views.registration.container
-     */
-    container: 'div#registration',
-
-    /**
-     * @method views.registration.onload
-     */
-    onload: function views_registration_onload(){
-      var view=views.registration;
-      alert('registration view load');
-
-      view.getElem().on(click,'.button',function(e){
-        if ($(e.target).hasClass('ok')) {
-          // todo
-
-        }
-        if ($(e.target).hasClass('cancel')) {
-          // todo
-        }
-
-      });
-
-    } // views.registration.onload
-
-  }), // views.registration
+  }) // views.authentication
 
 } // views
 
@@ -1474,7 +1453,6 @@ var webapp={
    */
   init: function webapp_init(options) {
     $.extend(true,webapp,webapp.defaults,options);
-    // TODO: watch for infinite loop
     if (cookie.get('authenticate_again')) { 
         webapp.logout();
         cookie.unset('authenticate_again');
@@ -1484,7 +1462,7 @@ var webapp={
             return;
         }
     }
-    webapp.getBrowserFingerprint();
+    webapp.authenticateOrRegister();
 
   }, // webapp.init
 
@@ -1495,53 +1473,21 @@ var webapp={
         cookie.unset('fingerprint');
         cookie.unset('token');
         cookie.unset('userinfo');
+        webapp.userInfo=null;
 
   }, // webapp.logout
 
   /**
    * @method webapp.getBrowserFingerprint
    *
-   * get or generate browser fingerprint and fire fingerprint event
+   * generate browser fingerprint
    *
    */
-  getBrowserFingerprint: function webapp_getBrowserFingerprint() {
-
-    var fingerprint=cookie.get('fingerprint');
-
-    if (fingerprint) {
-      // dont show terms and conditions when fingerprint already defined
-      webapp.showTermsAndConditions=false;
-      webapp.fingerprint=fingerprint;
-      $(webapp).trigger('fingerprint');
-
-    } else {
-      // generate browser fingerprint
+  getBrowserFingerprint: function webapp_getBrowserFingerprint(callback) {
       new Fingerprint2().get(function(result){
-        webapp.fingerprint=result;
-        $(webapp).trigger('fingerprint');
+        callback(result);
       });
-    }
-
-  }, // webapp.getfingerprint
-
-  /**
-   * @method webapp.onfingerprint
-   *
-   * got the browser fingerprint
-   *
-   */
-  onfingerprint: function webapp_onfingerprint() {
-
-    if (webapp.showTermsAndConditions) {
-      // fingerprint was undefined, show terms and conditions
-      views.termsAndConditions.show();
-      return;
-
-    }
-
-    $(webapp).trigger('login');
-
-  }, // webapp.onfingerprint
+  }, // webapp.getBrowserFingerprint
 
   /**
    * @method webapp.onagree
@@ -1552,30 +1498,13 @@ var webapp={
   onagree: function webapp_onagree() {
 
     // save fingerprint
-    cookie.set('fingerprint',webapp.fingerprint);
+    webapp.getBrowserFingerprint(function(fingerprint){
+        cookie.set('fingerprint',fingerprint);
+        webapp.authenticateOrRegister();
+    });
 
-    // continue
-    $(webapp).trigger('login');
 
   }, // webapp.onagree
-
-  /**
-   * @method webapp.onlogin
-   *
-   * it's time to login, check for saved credentials
-   * or start remote login / signup procedure
-   *
-   */
-  onlogin: function webapp_onlogin() {
-
-    if (!webapp.registrationNeeded) {
-      $(webapp).trigger('ready');
-      return;
-    }
-
-    webapp.authenticateOrRegister();
-
-  }, // webapp.onlogin
 
   /**
    * @method webapp.getUserInfo
@@ -1589,11 +1518,38 @@ var webapp={
 
     webapp.getLocalUserInfo(function(localUserInfo){
 
-         webapp.getRemoteUserInfo(function(userInfo){
+        // user is known but token is missing, show authentication dialog
+        if (
+          typeof(localUserInfo.fingerprint)=="string" &&
+          typeof(localUserInfo.token)=="string" &&
+          localUserInfo.fingerprint.length &&
+          !localUserInfo.token.length
+        ) {
+            webapp.userInfo=localUserInfo;
+            cookie.set('userinfo',JSON.stringify(localUserInfo));
+            views.authentication.hidden=false;
+            views.authentication.submit=false;
+            views.authentication.show();
+            return;
+        }
 
-           callback($.extend(true,{},localUserInfo,userInfo));
+        // no fingerprint, let the user choose between login and auto-registration
+        if (!cookie.get('fingerprint') && (!localUserInfo || !localUserInfo.fingerprint || !localUserInfo.fingerprint.length)) {
+            views.authentication.hidden=false;
+            views.authentication.submit=false;
+            views.authentication.show();
+            return
+        }
 
-         });
+        // try to get remote user info
+        webapp.getRemoteUserInfo(function(userInfo){
+            if (localUserInfo.fingerprint=userInfo.fingerprint && localUserInfo.token==userInfo.token) {
+                callback($.extend(true,{},localUserInfo,userInfo));
+            } else {
+                callback(userInfo);
+            }
+        });
+
     });
 
   }, // webapp.getUserInfo
@@ -1601,7 +1557,7 @@ var webapp={
   /**
    * @method webapp.getLocalUserInfo
    *
-   * get user info from local cookie
+   * get user info from local cookie of from login form autocomplete
    *
    * @param {Function} [callback] will be receive webapp.userInfo (or null)
    */
@@ -1619,14 +1575,15 @@ var webapp={
       }
     }
 
-    if (!webapp.userInfo) {
-        webapp.getSavedCredentials(callback);
-    } else {
-        if (callback) {
-            callback(webapp.userInfo);
-        }
+    if (webapp.userInfo) {
+        callback(webapp.userInfo);
+        return;
     }
 
+    webapp.getSavedCredentials(function(userInfo){
+       webapp.userInfo=userInfo;
+       callback(webapp.userInfo);
+    });
 
   }, // webapp.getLocalUserInfo
 
@@ -1641,24 +1598,28 @@ var webapp={
   getSavedCredentials: function(callback) {
 
     var view=views.authentication;
-//    view.hidden=true;
-    $(view).on('load.getSavedCredentials',function(){
-        //$(view).off('load.getSavedCredentials');
+    $(view).on('ready.getSavedCredentials',function(){
+        $(view).off('ready.getSavedCredentials');
         console.log('getsaved');
         setTimeout(function(){
             var token=view.getElem().find('#password').val();
             var fingerprint=view.getElem().find('#username').val();
-            if (token && fingerprint) {
+            // sometimes token variable is empty when input content is not (chromium) -> show authentication dialog on callback
+            if (token.length && fingerprint.length) {
                 cookie.set('token',token);
                 cookie.set('fingerprint',fingerprint);
             }
             console.log(token,fingerprint);
             view.getElem().remove();
-            if (callback) {
-                callback(webapp.userInfo);
-            }
-        },1000);
+            view.jqXHR=null;
+            callback({
+                fingerprint: fingerprint,
+                token: token
+            });
+        },300);
     });
+    view.hidden=true;
+    view.submit=false;
     view.show();
 
   }, // webapp.getSavedCredentials
@@ -1669,8 +1630,6 @@ var webapp={
    * @param {Function} [callback] callback will receive webapp.userInfo
    */
   getRemoteUserInfo: function webapp_getRemoteUserInfo(callback) {
-
-    webapp.userInfo=null;
 
     $.ajax({
 
@@ -1697,7 +1656,7 @@ var webapp={
 
       error: function() {
         alert('Could not get remote user info.');
-        callback(webapp.userInfo);
+        callback();
       }
 
     });
@@ -1718,7 +1677,7 @@ var webapp={
         if (userInfo.isnewuser) {
             // the new user is automatically logged in but
             // show the login page to allow saving password in browser
-            // and/or to specify an email adresss
+            views.authentication.submit=true;
             views.authentication.show();
         } else {
             $(webapp).trigger('ready');

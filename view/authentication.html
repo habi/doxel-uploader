@@ -1,15 +1,20 @@
-<div id="authentication">
+<div id="authentication" class="hidden">
 
 <div class="wrapper">
 
     <form method="POST" autocomplete="on">
+        <button class="button signup">
+            Instant Access
+        </button>
+        <hr>
+        <div class="hr">or</div>
         <div class="field user">
-            <label for="username">Login: (you can replace it with your email)</label>
+            <label for="username">Username</label>
             <input name="username" id="username" type="text">
         </div>
 
         <div class="field password">
-            <label for="password">Password:</label>
+            <label for="password">Password</label>
             <input name="password" id="password" type="password">
         </div>
 
@@ -18,9 +23,6 @@
 
         <button class="button login">Login</button>
 
-        <div class="field comment">
-            Connection details are saved in cookies.
-        </div>
 
 
     </form>
