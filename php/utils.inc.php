@@ -4,6 +4,7 @@ include "db_config.inc.php";
 
 function assertUniqueHash($sha256) {
   global $pdo;
+  global $originalFilename;
 
   if (!preg_match('/^[0-9A-Fa-f]{64}$/', $sha256)) {
       die('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash."}, "id" : "id"}');
