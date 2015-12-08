@@ -110,7 +110,7 @@ var views={
       // the only way out of this view is clicking on agree
       if ($(e.target).hasClass('agree')) {
         $(views.termsAndConditions.container).remove();
-        $(webapp).trigger('agree');
+        $(views.termsAndConditions).trigger('agree');
       }
 
     } // views.termsAndConditions.setupEventHandlers
@@ -762,13 +762,12 @@ var views={
 
       $('a.termsAndConditions_link',views.plupload.container).on('click',function(){
 
-        webapp.onagree=function(){
-          views.termsAndConditions.getElem().hide(0);
-          views.plupload.getElem().show(0);
-        }
-
         views.plupload.getElem().hide(0);
 
+        views.termsAndConditions.onagree=function(){
+          views.termsAndConditions.getElem().remove();
+          views.plupload.getElem().show(0);
+        }
         views.termsAndConditions.show();
 
       });
@@ -1283,6 +1282,23 @@ var views={
   authentication: new View({
 
     /**
+     * @property views.authenticaiton.hidden
+     *
+     * keep the view hidden on show() (for retrieving autocompleted
+     * credential or to allow browser to save password)
+     *
+     */
+    hidden: false,
+
+    /**
+     * @property views.authentication.submit
+     *
+     * submit the view on ready (to allow browser to save password)
+     *
+     */
+    submit: false,
+
+    /**
      * @property views.authentication.url
      */
     url: 'view/authentication.html',
@@ -1317,6 +1333,15 @@ var views={
       }
 
     }, // views.authentication.onload
+
+    /**
+     * @method views.authentication.dispose
+     */
+    dispose: function views_authentication_dispose(){
+      view=views.authentication;
+      view.jqXHR=null;
+      view.getElem().remove();
+    }, // views.authentication.dispose
 
     /**
      * @method views.authentication.setupEventHandlers
@@ -1380,9 +1405,20 @@ var views={
      */
     button_register_click: function views_authentication_button_register_click(e){
       e.preventDefault();
-      views.authentication.jqXHR=null;
-      views.authentication.getElem().remove();
+
+      views.authentication.dispose();
       webapp.logout();
+
+      views.termsAndConditions.onagree=function(){
+        views.termsAndConditions.getElem().remove();
+
+        // save fingerprint
+        webapp.getBrowserFingerprint(function(fingerprint){
+            cookie.set('fingerprint',fingerprint);
+            webapp.authenticateOrRegister();
+        });
+      };
+
       views.termsAndConditions.show();
 
     }, // views.authentication.button_register_click
@@ -1490,23 +1526,6 @@ var webapp={
   }, // webapp.getBrowserFingerprint
 
   /**
-   * @method webapp.onagree
-   *
-   * termsandCondition have been agreed
-   *
-   */
-  onagree: function webapp_onagree() {
-
-    // save fingerprint
-    webapp.getBrowserFingerprint(function(fingerprint){
-        cookie.set('fingerprint',fingerprint);
-        webapp.authenticateOrRegister();
-    });
-
-
-  }, // webapp.onagree
-
-  /**
    * @method webapp.getUserInfo
    *
    * get local or remote user info
@@ -1610,8 +1629,7 @@ var webapp={
                 cookie.set('fingerprint',fingerprint);
             }
             console.log(token,fingerprint);
-            view.getElem().remove();
-            view.jqXHR=null;
+            view.dispose();
             callback({
                 fingerprint: fingerprint,
                 token: token
@@ -1677,6 +1695,7 @@ var webapp={
         if (userInfo.isnewuser) {
             // the new user is automatically logged in but
             // show the login page to allow saving password in browser
+            views.authentication.hidden=true;
             views.authentication.submit=true;
             views.authentication.show();
         } else {
