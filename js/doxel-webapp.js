@@ -765,7 +765,6 @@ var views={
         views.plupload.getElem().hide(0);
 
         views.termsAndConditions.onagree=function(){
-          views.termsAndConditions.getElem().remove();
           views.plupload.getElem().show(0);
         }
         views.termsAndConditions.show();
@@ -1410,8 +1409,6 @@ var views={
       webapp.logout();
 
       views.termsAndConditions.onagree=function(){
-        views.termsAndConditions.getElem().remove();
-
         // save fingerprint
         webapp.getBrowserFingerprint(function(fingerprint){
             cookie.set('fingerprint',fingerprint);
