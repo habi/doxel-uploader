@@ -37,14 +37,12 @@
 include('php/cookies.inc.php');
 
 if (isset($_REQUEST['q'])) {
-  $q=$_REQUEST['q'];
+  include('php/q.inc.php');
 
 } else {
   include('php/index.inc.php');
-  exit(0);
 
 }
 
-include('php/q.inc.php');
 
 ?>

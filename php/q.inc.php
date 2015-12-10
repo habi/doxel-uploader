@@ -40,10 +40,13 @@ include "utils.inc.php";
 
 header('Content-type: text/json');
 
+$q=$_REQUEST['q'];
+$result=array();
+
 if (!call_user_func('q_'.$q)) {
   die('{"jsonrpc" : "2.0", "error" : {"code": 702, "message": "Invalid command: '.$q.'"}, "id" : "id"}');
 }
-die('{"jsonrpc" : "2.0", "success" : "1", "id" : "id"}');
+die('{"jsonrpc" : "2.0", "result" : '.(count($result)?json_encode($result):'{}').', "id" : "id"}');
 
 function q_getUserInfo() {
   global $token, $fingerprint, $pdo, $isnewuser;
