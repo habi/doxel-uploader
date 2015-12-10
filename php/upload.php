@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 include('upload.config.inc.php');
 
+$messages=array();
+
 // get user id, check for hexadecimal only
 $userDirectory = $token;
 if (!preg_match('/^[0-9A-Fa-f]+$/', $userDirectory)) {
@@ -217,5 +219,26 @@ if (!$chunks || $chunk == $chunks - 1) {
   }
 }
 
+if (isset($_REQUEST['model'])) {
+    $model=$_REQUEST['model'];
+    $brand=$_REQUEST['brand'];
+    $found=(exec('grep '.escapeshellarg($brand.';'.$brand.' '.$model.';', $sensor_width_camera_database)))?'1':'0';
+    if (!$found) {
+//        $msg="Camera $brand $model not found in sensor database.\n\nProcessing will be delayed until somebody (you ?) add the sensor width in https://github.com/openMVG/openMVG/blob/develop/src/openMVG/exif/sensor_width_database/sensor_width_camera_database.txt.\n\n(Fork the openMVG project on GitHub, edit the file, create a pull request).";
+        $msg="Camera $brand $model not found in sensor database.\n\nProcessing will be delayed until somebody (you ?) add the sensor width in file sensor_width_camera_database.txt.\n\nGo to https://github.com/openMVG/openMVG\n\nFork the project, edit the file named sensor_width_camera_database.txt and create a pull request.\n\nIf you are unable to do this, open an issue on GitHub.\n\nThanks for contributing !\n";
+        $messages[]=array(
+            "code" => "SENSOR_UNKNOWN",
+            "message" => $msg,
+            "brand" => $brand,
+            "model" => $model
+        );
+        mail($admin_email,$message,$destFilename);
+    }
+}
+
+if (count($messages)) {
+    $result['messages']=$messages;
+}
+
 // Return Success JSON-RPC response
-die('{"jsonrpc" : "2.0", "success" : 1, "id" : "id"}');
+die('{"jsonrpc" : "2.0", "result" : '.(count($result)?json_encode($result):'{}').', "id" : "id"}');

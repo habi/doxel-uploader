@@ -56,12 +56,13 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
 
       $segment=str_replace('.','_',$row['segment']);
       $segment=str_pad($segment, 17, "0", STR_PAD_LEFT);
-
+/*
       // no gps coords
       if ($row['lon']===NULL || $lon===NULL) {
 
         // !gps && <2min -> same segment
-        return array(
+ */
+      return array(
           "dir" =>
             $upload_dir .
             DIRECTORY_SEPARATOR .
@@ -75,8 +76,8 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
 
         );
 
+/*
       } else {
-        /*
         // test if is distance is less than 20m
         $lon2=$row['lon']*M_PI/180;
         $lat2=$row['lat']*M_PI/180;
@@ -84,14 +85,13 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
         $x=($lon2-$lon1)*cos(($lat1+$lat2)/2);
         $y=($lat2-$lat1);
         $d=sqrt($x*$x+$y*$y)*6371000;
-         */
 
-      //  if ($d<20) {
+        if ($d<20) {
           return array(
             "dir" =>
               $upload_dir .
               DIRECTORY_SEPARATOR .
-              date("Y".DIRECTORY_SEPARATOR."m".DIRECTORY_SEPARATOR."d"/*.DIRECTORY_SEPARATOR."H"*/, substr($segment,0,10)) .
+              date("Y".DIRECTORY_SEPARATOR."m".DIRECTORY_SEPARATOR."d"/*.DIRECTORY_SEPARATOR."H"*//*, substr($segment,0,10)) .
               DIRECTORY_SEPARATOR .
               substr($segment,0,$targetDir_digits) .
               DIRECTORY_SEPARATOR .
@@ -99,8 +99,9 @@ function getTargetSegment($userDirectory,$timestamp,$lon,$lat) {
 
             "segment" => $segment
           );
-      //  }
+        }
       }
+ */
     }
   }
 

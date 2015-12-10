@@ -34,18 +34,22 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+
 include "auth.inc.php";
 include "utils.inc.php";
 
 header('Content-type: text/json');
 
+$q=$_REQUEST['q'];
+$result=array();
+
 if (!call_user_func('q_'.$q)) {
   die('{"jsonrpc" : "2.0", "error" : {"code": 702, "message": "Invalid command: '.$q.'"}, "id" : "id"}');
 }
-die('{"jsonrpc" : "2.0", "success" : "1", "id" : "id"}');
+die('{"jsonrpc" : "2.0", "result" : '.(count($result)?json_encode($result):'{}').', "id" : "id"}');
 
 function q_getUserInfo() {
-  global $token, $fingerprint, $pdo;
+  global $token, $fingerprint, $pdo, $isnewuser;
 
   $json="{}";
 
@@ -57,9 +61,13 @@ function q_getUserInfo() {
   ))) {
 
     if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
-      setcookie("userid", $row['id'], pow(2,31), '/');
+      setcookie("userid", $row['id'], pow(2,31), '../');
       $json=json_encode(array(
-        "id" => $row['id']
+          "id" => $row['id'],
+          "isnewuser" => $isnewuser,
+          "token" => $token,
+          "fingerprint" => $fingerprint
+
       ));
     }
   }

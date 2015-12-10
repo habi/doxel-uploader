@@ -33,7 +33,27 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+window.__alert=window.alert;
+window.alert=function(){
+  console.trace('alert');
+  return window.__alert.apply(window,Array.prototype.slice.call(arguments));
+}
+
 $(document).ready(function(){
+    // reload page with GET after login form POST
+    // (needed to save credentials with browser)
+    // to avoid 're-post data' warning dialog on refresh
+    if (cookie.get('reload')) {
+        cookie.unset('reload');
+        if (cookie.get('reload')) {
+            console.log('error: reload: cookie could not be deleted');
+            alert('unexpected error');
+            return;
+        }
+        window.location=window.location.href;
+        return;
+    }
+
     webapp.init();
 });
 
@@ -90,7 +110,7 @@ var views={
       // the only way out of this view is clicking on agree
       if ($(e.target).hasClass('agree')) {
         $(views.termsAndConditions.container).remove();
-        $(webapp).trigger('agree');
+        $(views.termsAndConditions).trigger('agree');
       }
 
     } // views.termsAndConditions.setupEventHandlers
@@ -115,6 +135,11 @@ var views={
     * @property views.plupload.container
     */
     container: 'div#plupload',
+
+    /**
+    * @property views.plupload.already_checked_for_camera_in_sensor_database
+    */
+    already_checked_for_camera_in_sensor_database: {},
 
     /**
     * @property views.plupload.uploaderEvents
@@ -246,6 +271,7 @@ var views={
 
         // set default timestamp to file modification date
         var _file=file.getNative();
+        // TODO: Date() should come from the server
         var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime() || (new Date()).getTime()).replace(/([0-9]{10})/,'$1_')+'000';
 
         // try to extract timestamp and GPS coordinates from EXIF
@@ -391,19 +417,29 @@ var views={
                     return;
                   }
 
-                  if (!json.success) {
+                  if (!json.result) {
                     alert('Could not check for file hash uniqueness');
                     uploader.stop();
                     return;
                   }
 
+                  // check only once for brand/model in sensor database
+                  var alreadyChecked=views.plupload.already_checked_for_camera_in_sensor_database;
+                  var brand=data.exif && data.exif.get('Make');
+                  var model=data.exif && data.exif.get('Model');
+                  var options={};
+                  if (!alreadyChecked[brand+';'+model]) {
+                      options.brand=brand;
+                      options.model=model;
+                  }
+
                   // set metadata to be uploaded
-                  uploader.setOption('multipart_params',{
+                  uploader.setOption('multipart_params',$.extend(options,{
                     timestamp: timestamp,
                     lon: lon,
                     lat: lat,
                     sha256: result.sha256
-                  });
+                  }));
 
                   // update file
                   if (!file.updated) {
@@ -506,9 +542,17 @@ var views={
 
           } else {
 
-            if (response.success) {
+            if (response.result) {
+
                // remove DOM element after upload
                $file.remove();
+
+              if (response.result.messages) {
+                  // TODO: notify instead
+                  var m0=response.result.messages[0];
+                  alert(m0.message);
+                  views.plupload.already_checked_for_camera_in_sensor_database[m0.brand+';'+m0.model]=true;
+              }
 
             } else {
               // upload failed
@@ -742,13 +786,11 @@ var views={
 
       $('a.termsAndConditions_link',views.plupload.container).on('click',function(){
 
-        webapp.onagree=function(){
-          views.termsAndConditions.getElem().hide(0);
-          views.plupload.getElem().show(0);
-        }
-
         views.plupload.getElem().hide(0);
 
+        views.termsAndConditions.onagree=function(){
+          views.plupload.getElem().show(0);
+        }
         views.termsAndConditions.show();
 
       });
@@ -1257,12 +1299,27 @@ var views={
   /**
    *  @property views.authentication
    *
-   *  @TODO
-   *
-   * view to display the login/signup form
+   * view to display the login form
    *
    */
   authentication: new View({
+
+    /**
+     * @property views.authenticaiton.hidden
+     *
+     * keep the view hidden on show() (for retrieving autocompleted
+     * credential or to allow browser to save password)
+     *
+     */
+    hidden: false,
+
+    /**
+     * @property views.authentication.submit
+     *
+     * submit the view on ready (to allow browser to save password)
+     *
+     */
+    submit: false,
 
     /**
      * @property views.authentication.url
@@ -1275,14 +1332,39 @@ var views={
     container: 'div#authentication',
 
     /**
-     * @method views.authentication.onload
+     * @method views.authentication.onready
      */
-    onload: function views_authentication_onload(){
+    onready: function views_authentication_onload(){
       var view=views.authentication;
+
+      $(view.container).css('visibility',view.hidden?'hidden':'visible');
 
       view.setupEventHandlers();
 
+      // for saving password with firefox / chrome ...
+      if (!window.webkitURL) {
+          $('form',view.getElem()).attr('action',document.location.href);
+      }
+
+      if (view.submit) {
+          // username and password should be overriden by the browser if the password was saved
+          $('#username, #fingerprint',view.getElem()).val(webapp.userInfo.fingerprint);
+          $('#password, #token',view.getElem()).val(webapp.userInfo.token);
+          cookie.set('reload',true);
+          view.submit=false;
+          view.getElem().find('form')[0].submit();
+      }
+
     }, // views.authentication.onload
+
+    /**
+     * @method views.authentication.dispose
+     */
+    dispose: function views_authentication_dispose(){
+      view=views.authentication;
+      view.jqXHR=null;
+      view.getElem().remove();
+    }, // views.authentication.dispose
 
     /**
      * @method views.authentication.setupEventHandlers
@@ -1290,36 +1372,98 @@ var views={
     setupEventHandlers: function views_authentication_setupEventHandlers(){
       var view=views.authentication;
 
-      view.getElem().on('click','.button',function(e){
+      view.getElem()
+      .on('mouseenter', '#password', function(e){
+          $(e.target).attr('type','text');
+      })
+      .on('mouseleave', '#password', function(e) {
+          $(e.target).attr('type','password');
+      })
+      .on('click','.button',function(e){
 
         if ($(e.target).hasClass('login')) {
-          view.button_login_click();
+          view.button_login_click(e);
         }
 
-        if ($(e.target).hasClass('register')) {
-          view.button_register_click();
+        if ($(e.target).hasClass('signup')) {
+          view.button_register_click(e);
         }
-
+/*
         if ($(e.target).hasClass('recover')) {
-          view.button_recover_click();
+          view.button_recover_click(e);
         }
+        */
 
+      })
+      .on('submit', 'form', function(e) {
+          var pathname=document.location.pathname;
+
+          cookie.set('token',$.cookie('token'));
+/*
+          if (window.webkitURL) {
+              // disable form submit for webkit based browser
+              e.preventDefault();
+
+              // play with history to save password with without reloading page.
+              setTimeout(function(){
+                  window.history.replaceState({login: true}, 'Login successful', "success.html");
+                  window.history.replaceState({login: true}, '', pathname);
+              });
+
+          } else {
+          */
+              // with firefox you cannot play with history, yu must redirect to
+              // the form action url so that the browser save the password.
+              // So set 'reload' cookie, and check it on document ready
+              // to reload the page with a GET and avoid the 'resend post data'
+              // dialog on refresh
+              cookie.set('reload',true);
+//          }
       });
 
     }, // views.authentication.setupEventHandlers
 
     /**
+     * @method views.authentication.button_register_click
+     */
+    button_register_click: function views_authentication_button_register_click(e){
+      e.preventDefault();
+
+      views.authentication.dispose();
+      webapp.logout();
+
+      views.termsAndConditions.onagree=function(){
+        // save fingerprint
+        webapp.getBrowserFingerprint(function(fingerprint){
+            cookie.set('fingerprint',fingerprint);
+            webapp.authenticateOrRegister();
+        });
+      };
+
+      views.termsAndConditions.show();
+
+    }, // views.authentication.button_register_click
+
+    /**
      * @method views.authentication.button_login_click
      */
-    button_login_click: function views_authentication_button_login_click(){
+    button_login_click: function views_authentication_button_login_click(e){
       var view=views.authentication;
 
       if (!view.input_validate()) {
         return;
       }
 
-      $.ajax({
-      });
+      cookie.set('token', $('#password',view.getElem()).val());
+      cookie.set('fingerprint', $('#username',view.getElem()).val());
+      webapp.userInfo={
+          token: $('#password',view.getElem()).val(),
+          fingerprint: $('#username',view.getElem()).val()
+      };
+      cookie.set('userinfo',JSON.stringify(webapp.userInfo));
+
+      cookie.set('reload',true);
+      $('form',view.getElem())[0].submit();
 
     }, // views.authentication.button_login_click
 
@@ -1328,53 +1472,12 @@ var views={
      */
     input_validate: function views_authentication_input_validate(){
       var view=views.authentication;
+      return true;
 
 
     }, // views.authentication.input_validate
 
-  }), // views.authentication
-
-  /**
-   * views.registration
-   *
-   * @TODO
-   *
-   * view to display login/signup dialog
-   *
-   */
-  registration: new View({
-
-    /**
-     * @property views.registration.url
-     */
-    url: 'view/registration.html',
-
-    /**
-     * @property views.registration.container
-     */
-    container: 'div#registration',
-
-    /**
-     * @method views.registration.onload
-     */
-    onload: function views_registration_onload(){
-      var view=views.registration;
-      alert('registration view load');
-
-      view.getElem().on(click,'.button',function(e){
-        if ($(e.target).hasClass('ok')) {
-          // todo
-
-        }
-        if ($(e.target).hasClass('cancel')) {
-          // todo
-        }
-
-      });
-
-    } // views.registration.onload
-
-  }), // views.registration
+  }) // views.authentication
 
 } // views
 
@@ -1397,7 +1500,6 @@ var webapp={
    */
   defaults: {
     showTermsAndConditions: true,
-    registrationNeeded: true,
     cookie_expire: Math.pow(2,31),
     initialView: views.plupload
   },
@@ -1407,88 +1509,41 @@ var webapp={
    */
   init: function webapp_init(options) {
     $.extend(true,webapp,webapp.defaults,options);
-    webapp.getBrowserFingerprint();
+    if (cookie.get('authenticate_again')) { 
+        webapp.logout();
+        cookie.unset('authenticate_again');
+        if (cookie.get('authenticate_again')) {
+            console.log('error: authenticate_again: cookie could not be deleted');
+            alert('unexpected error');
+            return;
+        }
+    }
+    webapp.authenticateOrRegister();
 
   }, // webapp.init
 
   /**
+   * @method webapp.logout
+   */
+  logout: function webapp_logout() {
+        cookie.unset('fingerprint');
+        cookie.unset('token');
+        cookie.unset('userinfo');
+        webapp.userInfo=null;
+
+  }, // webapp.logout
+
+  /**
    * @method webapp.getBrowserFingerprint
    *
-   * get or generate browser fingerprint and fire fingerprint event
+   * generate browser fingerprint
    *
    */
-  getBrowserFingerprint: function webapp_getBrowserFingerprint() {
-
-    var fingerprint=cookie.get('fingerprint');
-
-    if (fingerprint) {
-      // dont show terms and conditions when fingerprint already defined
-      webapp.showTermsAndConditions=false;
-      webapp.fingerprint=fingerprint;
-      $(webapp).trigger('fingerprint');
-
-    } else {
-      // generate browser fingerprint
+  getBrowserFingerprint: function webapp_getBrowserFingerprint(callback) {
       new Fingerprint2().get(function(result){
-        webapp.fingerprint=result;
-        $(webapp).trigger('fingerprint');
+        callback(result);
       });
-    }
-
-  }, // webapp.getfingerprint
-
-  /**
-   * @method webapp.onfingerprint
-   *
-   * got the browser fingerprint
-   *
-   */
-  onfingerprint: function webapp_onfingerprint() {
-
-    if (webapp.showTermsAndConditions) {
-      // fingerprint was undefined, show terms and conditions
-      views.termsAndConditions.show();
-      return;
-
-    }
-
-    $(webapp).trigger('login');
-
-  }, // webapp.onfingerprint
-
-  /**
-   * @method webapp.onagree
-   *
-   * termsandCondition have been agreed
-   *
-   */
-  onagree: function webapp_onagree() {
-
-    // save fingerprint
-    cookie.set('fingerprint',webapp.fingerprint);
-
-    // continue
-    $(webapp).trigger('login');
-
-  }, // webapp.onagree
-
-  /**
-   * @method webapp.onlogin
-   *
-   * it's time to login, check for saved credentials
-   * or start remote login / signup procedure
-   *
-   */
-  onlogin: function webapp_onlogin() {
-
-    if (!webapp.registrationNeeded) {
-      $(webapp).trigger('ready');
-      return;
-    }
-
-    webapp.authenticateOrRegister();
-
-  }, // webapp.onlogin
+  }, // webapp.getBrowserFingerprint
 
   /**
    * @method webapp.getUserInfo
@@ -1500,17 +1555,40 @@ var webapp={
    */
   getUserInfo: function webapp_getUserInfo(callback) {
 
-    webapp.getLocalUserInfo(function(userInfo){
+    webapp.getLocalUserInfo(function(localUserInfo){
 
-      if (userInfo) {
-        callback(userInfo);
+        // user is known but token is missing, show authentication dialog
+        if (
+          typeof(localUserInfo.fingerprint)=="string" &&
+          typeof(localUserInfo.token)=="string" &&
+          localUserInfo.fingerprint.length &&
+          !localUserInfo.token.length
+        ) {
+            webapp.userInfo=localUserInfo;
+            cookie.set('userinfo',JSON.stringify(localUserInfo));
+            views.authentication.hidden=false;
+            views.authentication.submit=false;
+            views.authentication.show();
+            return;
+        }
 
-      } else {
-         webapp.getRemoteUserInfo(function(userInfo){
-           callback(userInfo);
+        // no fingerprint, let the user choose between login and auto-registration
+        if (!cookie.get('fingerprint') && (!localUserInfo || !localUserInfo.fingerprint || !localUserInfo.fingerprint.length)) {
+            views.authentication.hidden=false;
+            views.authentication.submit=false;
+            views.authentication.show();
+            return
+        }
 
-         });
-      }
+        // try to get remote user info
+        webapp.getRemoteUserInfo(function(userInfo){
+            if (localUserInfo.fingerprint=userInfo.fingerprint && localUserInfo.token==userInfo.token) {
+                callback($.extend(true,{},localUserInfo,userInfo));
+            } else {
+                callback(userInfo);
+            }
+        });
+
     });
 
   }, // webapp.getUserInfo
@@ -1518,7 +1596,7 @@ var webapp={
   /**
    * @method webapp.getLocalUserInfo
    *
-   * get user info from local cookie
+   * get user info from local cookie of from login form autocomplete
    *
    * @param {Function} [callback] will be receive webapp.userInfo (or null)
    */
@@ -1529,17 +1607,60 @@ var webapp={
     if (json) {
       try {
         webapp.userInfo=JSON.parse(json);
+        webapp.userInfo.isnewuser=false;
 
       } catch(e) {
         webapp.userInfo=null;
       }
     }
 
-    if (callback) {
-      callback(webapp.userInfo);
+    if (webapp.userInfo) {
+        callback(webapp.userInfo);
+        return;
     }
 
+    webapp.getSavedCredentials(function(userInfo){
+       webapp.userInfo=userInfo;
+       callback(webapp.userInfo);
+    });
+
   }, // webapp.getLocalUserInfo
+
+  /**
+   * @method webapp.getSavedCredentials
+   *
+   * display the (invisible) login dialog and wait one second, then
+   * restore authentication cookies if the form inputs have been 
+   * autocompleted by the browser.
+   *
+   */
+  getSavedCredentials: function(callback) {
+
+    var view=views.authentication;
+    $(view).on('ready.getSavedCredentials',function(){
+        $(view).off('ready.getSavedCredentials');
+        console.log('getsaved');
+        setTimeout(function(){
+            var token=view.getElem().find('#password').val();
+            var fingerprint=view.getElem().find('#username').val();
+            // sometimes token variable is empty when input content is not (chromium) -> show authentication dialog on callback
+            if (token.length && fingerprint.length) {
+                cookie.set('token',token);
+                cookie.set('fingerprint',fingerprint);
+            }
+            console.log(token,fingerprint);
+            view.dispose();
+            callback({
+                fingerprint: fingerprint,
+                token: token
+            });
+        },300);
+    });
+    view.hidden=true;
+    view.submit=false;
+    view.show();
+
+  }, // webapp.getSavedCredentials
 
   /**
    * @method webapp.getRemoteUserInfo
@@ -1547,8 +1668,6 @@ var webapp={
    * @param {Function} [callback] callback will receive webapp.userInfo
    */
   getRemoteUserInfo: function webapp_getRemoteUserInfo(callback) {
-
-    webapp.userInfo=null;
 
     $.ajax({
 
@@ -1575,7 +1694,7 @@ var webapp={
 
       error: function() {
         alert('Could not get remote user info.');
-        callback(webapp.userInfo);
+        callback();
       }
 
     });
@@ -1588,18 +1707,25 @@ var webapp={
    */
   authenticateOrRegister: function webapp_authenticateOrRegister() {
 
-    webapp.getUserInfo(function(success){
+    webapp.getUserInfo(function(userInfo){
 
-      if (success) {
-// automatic registration/authentification for now
-        cookie.set('token',$.cookie('token'));
-        $(webapp).trigger('ready');
-//        views.authentication.show();
+      if (userInfo) {
+        webapp.userInfo=userInfo;
+        cookie.set('userinfo',JSON.stringify(userInfo));
+        if (userInfo.isnewuser) {
+            // the new user is automatically logged in but
+            // show the login page to allow saving password in browser
+            views.authentication.hidden=true;
+            views.authentication.submit=true;
+            views.authentication.show();
+        } else {
+            $(webapp).trigger('ready');
+        }
 
       } else {
+        cookie.set('authenticate_again', true);
         alert('Authentication failed');
-//        views.registration.show();
-
+        document.location=document.location.href;
       }
 
     });
@@ -1679,6 +1805,7 @@ function file_update(file,callback) {
     });
     console.log(exif);          
 
+    // TODO: date should come from the server
     exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";
 
     var jpeg;

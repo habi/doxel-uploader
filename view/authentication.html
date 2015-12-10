@@ -1,18 +1,32 @@
-<div id="authentication">
+<div id="authentication" class="hidden">
 
 <div class="wrapper">
-  <div class="field usermail">
-    <label for="usermail">Login:</label>
-    <input id="usermail" type="email"></input>
-  </div>
 
-  <div class="field userpass">
-    <label for="userpass">Password:</label>
-    <input id="userpass" type="password"></input>
-  </div>
+    <form method="POST" autocomplete="on">
+        <button class="button signup">
+            Instant Access
+        </button>
+        <hr>
+        <div class="hr">or</div>
+        <div class="field user">
+            <label for="username">Username</label>
+            <input name="username" id="username" type="text">
+        </div>
 
-  <div class="button login">Login</div>
-  <div class="button register">Register</div>
+        <div class="field password">
+            <label for="password">Password</label>
+            <input name="password" id="password" type="password">
+        </div>
+
+        <input type="hidden" name="fingerprint" id="fingerprint" type="text">
+        <input type="hidden" name="token" id="token" type="text">
+
+        <button class="button login">Login</button>
+
+
+
+    </form>
+
 </div>
 
 </div>
