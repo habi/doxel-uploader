@@ -137,6 +137,11 @@ var views={
     container: 'div#plupload',
 
     /**
+    * @property views.plupload.already_checked_for_camera_in_sensor_database
+    */
+    already_checked_for_camera_in_sensor_database: {},
+
+    /**
     * @property views.plupload.uploaderEvents
     *
     * see plupload source code for uploader events documentation
@@ -266,6 +271,7 @@ var views={
 
         // set default timestamp to file modification date
         var _file=file.getNative();
+        // TODO: Date() should come from the server
         var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime() || (new Date()).getTime()).replace(/([0-9]{10})/,'$1_')+'000';
 
         // try to extract timestamp and GPS coordinates from EXIF
@@ -411,19 +417,29 @@ var views={
                     return;
                   }
 
-                  if (!json.success) {
+                  if (!json.result) {
                     alert('Could not check for file hash uniqueness');
                     uploader.stop();
                     return;
                   }
 
+                  // check only once for brand/model in sensor database
+                  var alreadyChecked=views.plupload.already_checked_for_camera_in_sensor_database;
+                  var brand=data.exif && data.exif.get('Make');
+                  var model=data.exif && data.exif.get('Model');
+                  var options={};
+                  if (!alreadyChecked[brand+';'+model]) {
+                      options.brand=brand;
+                      options.model=model;
+                  }
+
                   // set metadata to be uploaded
-                  uploader.setOption('multipart_params',{
+                  uploader.setOption('multipart_params',$.extend(options,{
                     timestamp: timestamp,
                     lon: lon,
                     lat: lat,
                     sha256: result.sha256
-                  });
+                  }));
 
                   // update file
                   if (!file.updated) {
@@ -526,9 +542,17 @@ var views={
 
           } else {
 
-            if (response.success) {
+            if (response.result) {
+
                // remove DOM element after upload
                $file.remove();
+
+              if (response.result.messages) {
+                  // TODO: notify instead
+                  var m0=response.result.messages[0];
+                  alert(m0.message);
+                  views.plupload.already_checked_for_camera_in_sensor_database[m0.brand+';'+m0.model]=true;
+              }
 
             } else {
               // upload failed
@@ -1476,7 +1500,6 @@ var webapp={
    */
   defaults: {
     showTermsAndConditions: true,
-    registrationNeeded: true,
     cookie_expire: Math.pow(2,31),
     initialView: views.plupload
   },
@@ -1782,6 +1805,7 @@ function file_update(file,callback) {
     });
     console.log(exif);          
 
+    // TODO: date should come from the server
     exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";
 
     var jpeg;
