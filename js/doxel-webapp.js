@@ -1346,10 +1346,10 @@ var views={
           $('form',view.getElem()).attr('action',document.location.href);
       }
 
+      // new user, submit so that credentials can be saved by the browser
       if (view.submit) {
-          // username and password should be overriden by the browser if the password was saved
-          $('#username, #fingerprint',view.getElem()).val(webapp.userInfo.fingerprint);
-          $('#password, #token',view.getElem()).val(webapp.userInfo.token);
+          $('#username',view.getElem()).val(askemail());
+          $('#password',view.getElem()).val(webapp.userInfo.password);
           cookie.set('reload',true);
           view.submit=false;
           view.getElem().find('form')[0].submit();
@@ -1398,7 +1398,6 @@ var views={
       .on('submit', 'form', function(e) {
           var pathname=document.location.pathname;
 
-          cookie.set('token',$.cookie('token'));
 /*
           if (window.webkitURL) {
               // disable form submit for webkit based browser
@@ -1454,11 +1453,11 @@ var views={
         return;
       }
 
-      cookie.set('token', $('#password',view.getElem()).val());
-      cookie.set('fingerprint', $('#username',view.getElem()).val());
+      cookie.set('email', $('#username',view.getElem()).val());
+      cookie.set('password', $('#password',view.getElem()).val());
       webapp.userInfo={
-          token: $('#password',view.getElem()).val(),
-          fingerprint: $('#username',view.getElem()).val()
+          password: $('#password',view.getElem()).val(),
+          email: $('#username',view.getElem()).val()
       };
       cookie.set('userinfo',JSON.stringify(webapp.userInfo));
 
@@ -1487,8 +1486,6 @@ var views={
  *
  * main application
  *
- * @event {fingerprint} the fingerprint has been loaded or computed
- * @event {login} it's time to start the login process
  * @event {ready} the webapp is ready
  *
  *
@@ -1527,7 +1524,8 @@ var webapp={
    */
   logout: function webapp_logout() {
         cookie.unset('fingerprint');
-        cookie.unset('token');
+        cookie.unset('password');
+        cookie.unset('access_token');
         cookie.unset('userinfo');
         webapp.userInfo=null;
 
@@ -1557,12 +1555,12 @@ var webapp={
 
     webapp.getLocalUserInfo(function(localUserInfo){
 
-        // user is known but token is missing, show authentication dialog
+        // user is known but password is missing, show authentication dialog
         if (
-          typeof(localUserInfo.fingerprint)=="string" &&
-          typeof(localUserInfo.token)=="string" &&
-          localUserInfo.fingerprint.length &&
-          !localUserInfo.token.length
+          typeof(localUserInfo.email)=="string" &&
+          typeof(localUserInfo.password)=="string" &&
+          localUserInfo.email.length &&
+          !localUserInfo.password.length
         ) {
             webapp.userInfo=localUserInfo;
             cookie.set('userinfo',JSON.stringify(localUserInfo));
@@ -1572,8 +1570,8 @@ var webapp={
             return;
         }
 
-        // no fingerprint, let the user choose between login and auto-registration
-        if (!cookie.get('fingerprint') && (!localUserInfo || !localUserInfo.fingerprint || !localUserInfo.fingerprint.length)) {
+        // no email, let the user choose between login and auto-registration
+        if (!cookie.get('email') && (!localUserInfo || !localUserInfo.email || !localUserInfo.email.length)) {
             views.authentication.hidden=false;
             views.authentication.submit=false;
             views.authentication.show();
@@ -1582,11 +1580,7 @@ var webapp={
 
         // try to get remote user info
         webapp.getRemoteUserInfo(function(userInfo){
-            if (localUserInfo.fingerprint=userInfo.fingerprint && localUserInfo.token==userInfo.token) {
-                callback($.extend(true,{},localUserInfo,userInfo));
-            } else {
-                callback(userInfo);
-            }
+            callback(userInfo);
         });
 
     });
@@ -1641,18 +1635,18 @@ var webapp={
         $(view).off('ready.getSavedCredentials');
         console.log('getsaved');
         setTimeout(function(){
-            var token=view.getElem().find('#password').val();
-            var fingerprint=view.getElem().find('#username').val();
-            // sometimes token variable is empty when input content is not (chromium) -> show authentication dialog on callback
-            if (token.length && fingerprint.length) {
-                cookie.set('token',token);
-                cookie.set('fingerprint',fingerprint);
+            var password=view.getElem().find('#password').val();
+            var email=view.getElem().find('#username').val();
+            // sometimes password variable is empty when input content is not (chromium) -> show authentication dialog on callback
+            if (password.length && email.length) {
+                cookie.set('password',password);
+                cookie.set('email',email);
             }
-            console.log(token,fingerprint);
+            console.log(password,email);
             view.dispose();
             callback({
-                fingerprint: fingerprint,
-                token: token
+                email: email,
+                password: password
             });
         },300);
     });
@@ -1684,6 +1678,8 @@ var webapp={
 
         if (json.error) {
           alert(json.error.message);
+          // reload the page
+          document.location=document.location.href;
 
         } else {
           webapp.userInfo=json;

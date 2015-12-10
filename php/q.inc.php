@@ -49,14 +49,14 @@ if (!call_user_func('q_'.$q)) {
 die('{"jsonrpc" : "2.0", "result" : '.(count($result)?json_encode($result):'{}').', "id" : "id"}');
 
 function q_getUserInfo() {
-  global $token, $fingerprint, $pdo, $isnewuser;
+  global $token, $password, $pdo, $isnewuser;
 
   $json="{}";
 
-  // get dummy session info for given fingerprint and token
-  $s=$pdo->prepare("SELECT * FROM users WHERE fingerprint = :fingerprint AND pass = :token LIMIT 1");
+  // get dummy session info for given password and token
+  $s=$pdo->prepare("SELECT * FROM users WHERE token = :token AND pass = :pass LIMIT 1");
   if ($s->execute(array(
-    ':fingerprint' => $fingerprint,
+    ':pass' => $password,
     ':token' => $token
   ))) {
 
@@ -66,7 +66,7 @@ function q_getUserInfo() {
           "id" => $row['id'],
           "isnewuser" => $isnewuser,
           "token" => $token,
-          "fingerprint" => $fingerprint
+          "pass" => $pass
 
       ));
     }

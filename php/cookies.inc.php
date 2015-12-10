@@ -34,6 +34,18 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+session_name("session");
+session_set_cookie_params(0,'/');
+if (session_status()!==PHP_SESSION_ACTIVE) {
+    session_start();
+    $_SESSION['random']=bin2hex(openssl_random_pseudo_bytes(16));
+}
+$session=session_id();
+
+if (isset($_COOKIE['access_token'])) {
+  $access_token=$_COOKIE['access_token'];
+}
+
 if (isset($_COOKIE['token'])) {
   $token=$_COOKIE['token'];
 }
@@ -42,8 +54,8 @@ if (isset($_COOKIE['fingerprint'])) {
   $fingerprint=$_COOKIE['fingerprint'];
 }
 
-if (isset($_COOKIE['userid'])) {
-  $userid=$_COOKIE['userid'];
+if (isset($_COOKIE['email'])) {
+  $email=$_COOKIE['email'];
 }
 
 ?>
