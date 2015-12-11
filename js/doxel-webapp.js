@@ -1346,7 +1346,7 @@ var views={
 
       // new user, submit so that credentials can be saved by the browser
       if (view.submit) {
-          $('#username',view.getElem()).val(askemail()||webapp.userInfo.username);
+          $('#username',view.getElem()).val(askemail()||webapp.userInfo.email);
           $('#password',view.getElem()).val(webapp.userInfo.password);
           cookie.set('reload',true);
           view.submit=false;
@@ -1361,6 +1361,7 @@ var views={
                   return;
               }
           }
+          return email;
       }
 
     }, // views.authentication.onload
@@ -1475,6 +1476,10 @@ var views={
       }
 
       cookie.set('reload',true);
+      cookie.set('userinfo',JSON.stringify({
+          email: $('#username',view.getElem()).val(),
+          password: $('#password',view.getElem()).val()
+      }));
       $('form',view.getElem())[0].submit();
 
     }, // views.authentication.button_login_click
@@ -1638,7 +1643,7 @@ var webapp={
 
         } else {
             webapp.userInfo=userInfo;
-            webapp.userInfo.isnewuser=false;
+            delete webapp.userInfo.isnewuser;
             if (cookie.get('access_token') && webapp.userInfo.password) {
                 delete webapp.userInfo.password;
             }
