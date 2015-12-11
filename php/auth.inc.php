@@ -107,7 +107,7 @@ if (isset($access_token) && eregi('^[0-9a-z]{40}$',$access_token) && checkAccess
     if ($action=='login') {
 
         // if email looks like a valid email, authenticate using email / password
-        if (isset($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (isset($email) && preg_match('/\S+@\S+\.\S+/',$email)) {
 
          // get user info for given email and password
           $s=$pdo->prepare("SELECT * FROM users WHERE email = :email LIMIT 1");
@@ -137,7 +137,7 @@ if (isset($access_token) && eregi('^[0-9a-z]{40}$',$access_token) && checkAccess
             ':token' => $email
           ))){
             if (($row=$s->fetch(PDO::FETCH_ASSOC)) && password_verify($password,$row['pass'])) {
-              setAccessTokenCookie();
+              setAccessTokenCookie($email);
               $_SESSION['userid']=$row['id'];
               $_SESSION['user']=strlen($row['email'])?$row['email']:$row['token'];
 
@@ -185,6 +185,7 @@ if (isset($access_token) && eregi('^[0-9a-z]{40}$',$access_token) && checkAccess
 
           $row=array(
             "fingerprint" => $fingerprint,
+            "email" => (preg_match('/\S+@\S+\.\S+/',$email)?$email:''),
             "token" => $token,
             "pass" => password_hash($password,PASSWORD_DEFAULT),
             "ip" => $_SERVER['REMOTE_ADDR'],
@@ -192,7 +193,7 @@ if (isset($access_token) && eregi('^[0-9a-z]{40}$',$access_token) && checkAccess
           );
 
           // add new user to database
-          $s=$pdo->prepare("INSERT INTO users(fingerprint, token, pass, ip, forwarded_for) VALUES(:fingerprint, :token, :pass, :ip, :forwarded_for)");
+          $s=$pdo->prepare("INSERT INTO users(fingerprint, email, token, pass, ip, forwarded_for) VALUES(:fingerprint, :email, :token, :pass, :ip, :forwarded_for)");
           $s->execute($row);
 
           // set user as authenticated
