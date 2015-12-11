@@ -786,8 +786,6 @@ var views={
 
       $('a.termsAndConditions_link',views.plupload.container).on('click',function(){
 
-        views.plupload.getElem().hide(0);
-
         views.termsAndConditions.onagree=function(){
           views.plupload.getElem().show(0);
         }
@@ -1348,11 +1346,21 @@ var views={
 
       // new user, submit so that credentials can be saved by the browser
       if (view.submit) {
-          $('#username',view.getElem()).val(askemail());
+          $('#username',view.getElem()).val(askemail()||webapp.userInfo.username);
           $('#password',view.getElem()).val(webapp.userInfo.password);
           cookie.set('reload',true);
           view.submit=false;
           view.getElem().find('form')[0].submit();
+      }
+
+      function askemail() {
+          var email='';
+          while(!email.match(/\S+@\S+\.\S+/)) {
+              var email=prompt('To be able to recover your account, enter an optional email address.',email);
+              if (!email) {
+                  return;
+              }
+          }
       }
 
     }, // views.authentication.onload
@@ -1382,10 +1390,14 @@ var views={
       .on('click','.button',function(e){
 
         if ($(e.target).hasClass('login')) {
+          webapp.logout();
+          $('#action',view.getElem()).val('login');
           view.button_login_click(e);
         }
 
         if ($(e.target).hasClass('signup')) {
+          webapp.logout();
+          $('#action',view.getElem()).val('signup');
           view.button_register_click(e);
         }
 /*
@@ -1429,13 +1441,22 @@ var views={
       e.preventDefault();
 
       views.authentication.dispose();
-      webapp.logout();
 
       views.termsAndConditions.onagree=function(){
         // save fingerprint
         webapp.getBrowserFingerprint(function(fingerprint){
             cookie.set('fingerprint',fingerprint);
-            webapp.authenticateOrRegister();
+            webapp.register(function(userInfo){
+                cookie.set('reload',true);
+                cookie.set('userinfo',JSON.stringify({
+                    email: userInfo.email,
+                    password: userInfo.password,
+                    isnewuser: true
+                }));
+                views.authentication.submit=true;
+                views.authentication.hidden=true;
+                views.authentication.show();
+            });
         });
       };
 
@@ -1452,14 +1473,6 @@ var views={
       if (!view.input_validate()) {
         return;
       }
-
-      cookie.set('email', $('#username',view.getElem()).val());
-      cookie.set('password', $('#password',view.getElem()).val());
-      webapp.userInfo={
-          password: $('#password',view.getElem()).val(),
-          email: $('#username',view.getElem()).val()
-      };
-      cookie.set('userinfo',JSON.stringify(webapp.userInfo));
 
       cookie.set('reload',true);
       $('form',view.getElem())[0].submit();
@@ -1505,8 +1518,10 @@ var webapp={
    * @method webapp.init
    */
   init: function webapp_init(options) {
+
     $.extend(true,webapp,webapp.defaults,options);
-    if (cookie.get('authenticate_again')) { 
+
+    if (cookie.get('authenticate_again')) {
         webapp.logout();
         cookie.unset('authenticate_again');
         if (cookie.get('authenticate_again')) {
@@ -1515,7 +1530,20 @@ var webapp={
             return;
         }
     }
-    webapp.authenticateOrRegister();
+
+    if (cookie.get('access_token')) {
+        webapp.checkAccessToken(function(json){
+            if (json.result) {
+                $(webapp).trigger('ready');
+
+            } else {
+                webapp.authenticateOrRegister();
+            }
+        });
+
+    } else {
+        webapp.authenticateOrRegister();
+    }
 
   }, // webapp.init
 
@@ -1524,9 +1552,7 @@ var webapp={
    */
   logout: function webapp_logout() {
         cookie.unset('fingerprint');
-        cookie.unset('password');
         cookie.unset('access_token');
-        cookie.unset('userinfo');
         webapp.userInfo=null;
 
   }, // webapp.logout
@@ -1555,6 +1581,14 @@ var webapp={
 
     webapp.getLocalUserInfo(function(localUserInfo){
 
+        // no email, let the user choose between login and auto-registration
+        if (!localUserInfo || !localUserInfo.email || !localUserInfo.email.length) {
+            views.authentication.hidden=false;
+            views.authentication.submit=false;
+            views.authentication.show();
+            return
+        }
+
         // user is known but password is missing, show authentication dialog
         if (
           typeof(localUserInfo.email)=="string" &&
@@ -1563,22 +1597,14 @@ var webapp={
           !localUserInfo.password.length
         ) {
             webapp.userInfo=localUserInfo;
-            cookie.set('userinfo',JSON.stringify(localUserInfo));
             views.authentication.hidden=false;
             views.authentication.submit=false;
             views.authentication.show();
             return;
         }
 
-        // no email, let the user choose between login and auto-registration
-        if (!cookie.get('email') && (!localUserInfo || !localUserInfo.email || !localUserInfo.email.length)) {
-            views.authentication.hidden=false;
-            views.authentication.submit=false;
-            views.authentication.show();
-            return
-        }
-
         // try to get remote user info
+        cookie.set('userinfo',JSON.stringify(localUserInfo));
         webapp.getRemoteUserInfo(function(userInfo){
             callback(userInfo);
         });
@@ -1590,7 +1616,8 @@ var webapp={
   /**
    * @method webapp.getLocalUserInfo
    *
-   * get user info from local cookie of from login form autocomplete
+   * Get user info from local cookie, or - when access token
+   * is invalid or undefined - from login form autocomplete
    *
    * @param {Function} [callback] will be receive webapp.userInfo (or null)
    */
@@ -1600,15 +1627,27 @@ var webapp={
 
     if (json) {
       try {
-        webapp.userInfo=JSON.parse(json);
-        webapp.userInfo.isnewuser=false;
+        userInfo=JSON.parse(json);
+        if (userInfo.source && userInfo.source=='browser') {
+            // previous login attempt using saved credentials failed
+            webapp.savedCredentialsInvalid=true;
+            callback();
+            return;
+
+        } else {
+            webapp.userInfo=userInfo;
+            webapp.userInfo.isnewuser=false;
+            if (cookie.get('access_token') && webapp.userInfo.password) {
+                delete webapp.userInfo.password;
+            }
+        }
 
       } catch(e) {
         webapp.userInfo=null;
       }
     }
 
-    if (webapp.userInfo) {
+    if (webapp.userInfo && webapp.userInfo.password && webapp.userInfo.password.length) {
         callback(webapp.userInfo);
         return;
     }
@@ -1621,32 +1660,61 @@ var webapp={
   }, // webapp.getLocalUserInfo
 
   /**
+   * @method webapp.checkAccessToken
+   */
+  checkAccessToken: function webapp_checkAccessToken(callback) {
+
+    $.ajax({
+      cache: false,
+      url: document.location.pathname,
+      method: 'POST',
+      dataType: 'json',
+
+      data: {
+        q: 'checkAccessToken',
+        action: 'verify'
+      },
+
+      success: function(json) {
+        callback(json);
+      },
+
+      error: function() {
+        alert('Could not get check access token.');
+      }
+
+    });
+
+  }, // webapp.checkAccessToken
+
+  /**
    * @method webapp.getSavedCredentials
    *
    * display the (invisible) login dialog and wait one second, then
-   * restore authentication cookies if the form inputs have been 
+   * restore authentication cookies if the form inputs have been
    * autocompleted by the browser.
    *
    */
-  getSavedCredentials: function(callback) {
+  getSavedCredentials: function webapp_getSavedCredentials(callback) {
 
     var view=views.authentication;
     $(view).on('ready.getSavedCredentials',function(){
         $(view).off('ready.getSavedCredentials');
         console.log('getsaved');
+        if (webapp.userInfo) {
+            view.getElem().find('#username').val(webapp.userInfo.email||'');
+            view.getElem().find('#password').val(webapp.userInfo.password||'');
+        }
         setTimeout(function(){
             var password=view.getElem().find('#password').val();
             var email=view.getElem().find('#username').val();
             // sometimes password variable is empty when input content is not (chromium) -> show authentication dialog on callback
-            if (password.length && email.length) {
-                cookie.set('password',password);
-                cookie.set('email',email);
-            }
             console.log(password,email);
             view.dispose();
             callback({
                 email: email,
-                password: password
+                password: password,
+                source: 'browser'
             });
         },300);
     });
@@ -1661,7 +1729,7 @@ var webapp={
    *
    * @param {Function} [callback] callback will receive webapp.userInfo
    */
-  getRemoteUserInfo: function webapp_getRemoteUserInfo(callback) {
+  getRemoteUserInfo: function webapp_getRemoteUserInfo(callback,data) {
 
     $.ajax({
 
@@ -1670,16 +1738,16 @@ var webapp={
       method: 'POST',
       dataType: 'json',
 
-      data: {
+      data: $.extend({
         q: 'getUserInfo'
-      },
+      },data),
 
       success: function(json) {
 
         if (json.error) {
           alert(json.error.message);
           // reload the page
-          document.location=document.location.href;
+//          document.location=document.location.href;
 
         } else {
           webapp.userInfo=json;
@@ -1707,7 +1775,6 @@ var webapp={
 
       if (userInfo) {
         webapp.userInfo=userInfo;
-        cookie.set('userinfo',JSON.stringify(userInfo));
         if (userInfo.isnewuser) {
             // the new user is automatically logged in but
             // show the login page to allow saving password in browser
@@ -1727,6 +1794,14 @@ var webapp={
     });
 
   }, // webapp.authenticateOrRegister
+
+  /**
+   * @method webapp.register
+   */
+  register: function webapp_register(callback){
+      webapp.getRemoteUserInfo(callback,{action: 'signup'});
+
+  }, // webapp.register
 
   /**
    * @method webapp.onready
@@ -1799,7 +1874,7 @@ function file_update(file,callback) {
     showtime('load exif',function(){
       exif  = piexif.load(e.target.result);
     });
-    console.log(exif);          
+    console.log(exif);
 
     // TODO: date should come from the server
     exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";

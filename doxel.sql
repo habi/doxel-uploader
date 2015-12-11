@@ -50,9 +50,10 @@ CREATE TABLE IF NOT EXISTS `pictures` (
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
 `id` int(11) NOT NULL,
-  `name` varchar(254) NOT NULL,
+  `email` varchar(254) NOT NULL,
+  `token` varchar(32) NOT NULL,
+  `pass` varchar(255) NOT NULL,
   `fingerprint` char(32) NOT NULL,
-  `pass` varchar(32) NOT NULL,
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ip` varchar(45) NOT NULL,
   `forwarded_for` varchar(45) NOT NULL

@@ -49,29 +49,17 @@ if (!call_user_func('q_'.$q)) {
 die('{"jsonrpc" : "2.0", "result" : '.(count($result)?json_encode($result):'{}').', "id" : "id"}');
 
 function q_getUserInfo() {
-  global $token, $password, $pdo, $isnewuser;
+  global $isnewuser;
 
-  $json="{}";
-
-  // get dummy session info for given password and token
-  $s=$pdo->prepare("SELECT * FROM users WHERE token = :token AND pass = :pass LIMIT 1");
-  if ($s->execute(array(
-    ':pass' => $password,
-    ':token' => $token
-  ))) {
-
-    if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
-      setcookie("userid", $row['id'], pow(2,31), '../');
-      $json=json_encode(array(
-          "id" => $row['id'],
-          "isnewuser" => $isnewuser,
-          "token" => $token,
-          "pass" => $pass
-
-      ));
-    }
+  $reply=array();
+  $reply['isnewuser']=$isnewuser;
+  $reply['email']=$_SESSION['user'];
+  if ($isnewuser) {
+      $reply['password']=$_SESSION['password'];
+      unset($_SESSION['password']);
   }
 
+  $json=json_encode($reply);
   header('Content-Length: '.strlen($json));
   die($json);
 
@@ -86,6 +74,14 @@ function q_uniq() {
   return true;
 
 } // q_uniq
+
+/**
+ * Check accessToken
+ */
+function q_checkAccessToken() {
+    // if we get here after auth.inc.php?action=verify the access token is already validated
+    die('{"jsonrpc" : "2.0", "result" : {}, "id" : "id"}');
+}
 
 /*
 function q_register() {

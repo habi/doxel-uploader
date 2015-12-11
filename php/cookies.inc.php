@@ -46,16 +46,13 @@ if (isset($_COOKIE['access_token'])) {
   $access_token=$_COOKIE['access_token'];
 }
 
-if (isset($_COOKIE['token'])) {
-  $token=$_COOKIE['token'];
-}
-
 if (isset($_COOKIE['fingerprint'])) {
   $fingerprint=$_COOKIE['fingerprint'];
 }
 
-if (isset($_COOKIE['email'])) {
-  $email=$_COOKIE['email'];
+if (isset($_COOKIE['userinfo'])) {
+    $userinfo=json_decode($_COOKIE['userinfo'],true);
+    if (isset($userinfo['email'])) $email=$userinfo['email'];
+    if (isset($userinfo['password'])) $password=$userinfo['password'];
 }
 
-?>
