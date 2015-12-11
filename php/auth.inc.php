@@ -62,6 +62,7 @@ function checkAccessToken($access_token) {
     ))){
     if ($row=$s->fetch(PDO::FETCH_ASSOC)) {
             $_SESSION['user']=strlen($row['email'])?$row['email']:$row['token'];
+            $_SESSION['usertoken']=$row['token'];
             return $access_token == getAccessToken($row['token']);
         } else {
             return FALSE;

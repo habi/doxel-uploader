@@ -1553,6 +1553,8 @@ var webapp={
   logout: function webapp_logout() {
         cookie.unset('fingerprint');
         cookie.unset('access_token');
+        // TODO: allow the user to choose to keep login (and/or password) in cookies
+        cookie.unset('userinfo');
         webapp.userInfo=null;
 
   }, // webapp.logout

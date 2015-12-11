@@ -38,8 +38,9 @@ include('upload.config.inc.php');
 $messages=array();
 
 // get user id, check for hexadecimal only
-$userDirectory = $token;
+$userDirectory = $_SESSION['usertoken'];
 if (!preg_match('/^[0-9A-Fa-f]+$/', $userDirectory)) {
+  // TODO: replace "message" with "result: {message:" in all jsonrpc responses
   die('{"jsonrpc" : "2.0", "error" : {"code": 900, "message": "Invalid user id."}, "id" : "id"}');
 }
 
@@ -204,7 +205,7 @@ if (!$chunks || $chunk == $chunks - 1) {
   $s=$pdo->prepare('INSERT INTO pictures(sha256, user, timestamp, segment, lon, lat) VALUES(:sha256, :user, FROM_UNIXTIME(:timestamp), FROM_UNIXTIME(:segment), :lon, :lat)');
   if (!$s->execute(array(
     ":sha256" => hex2bin($sha256),
-    ":user" => $userid,
+    ":user" => $_SESSION['userid'],
     ":timestamp" => str_replace('_','.',$timestamp),
     ":segment" => str_replace('_','.',$target['segment']),
     ":lon" => $lon,
