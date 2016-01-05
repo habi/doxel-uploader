@@ -42,8 +42,12 @@ if (isset($_COOKIE['fingerprint'])) {
   $fingerprint=$_COOKIE['fingerprint'];
 }
 
-if (isset($_COOKIE['userid'])) {
-  $userid=$_COOKIE['userid'];
+if (isset($_COOKIE['access_token'])) {
+  $access_token=$_COOKIE['access_token'];
+}
+
+if (isset($_COOKIE['userId'])) {
+  $userId=$_COOKIE['userId'];
 }
 
 ?>
