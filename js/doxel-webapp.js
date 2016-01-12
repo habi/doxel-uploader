@@ -33,6 +33,7 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+var disable_fileUpdate=false;
 window.__alert=window.alert;
 window.alert=function(){
   console.trace('alert');
@@ -142,7 +143,12 @@ var views={
       Error: function views_plupload_uploaderEvents_Error(uploader,error){
         console.log('Error',arguments);
         if (error.code!=-602) { // no alert here on duplicate file error
-            alert(error.message);
+            if (error.response && String(error.response).match('jsonrpc')) {
+              var response=JSON.parse(error.response);
+              alert(response.error.message);
+            } else {
+              alert(error.message);
+            }
             uploader.stop();
         }
       },
@@ -258,7 +264,7 @@ var views={
         // set default timestamp to file modification date
         var _file=file.getNative();
         // TODO: Date() should come from the server
-        var timestamp=String(_file.lastModified || _file.lastModifiedDate.getTime() || (new Date()).getTime()).replace(/([0-9]{10})/,'$1_')+'000';
+        var timestamp=String(_file.lastModified || (_file.lastModifiedDate && _file.lastModifiedDate.getTime()) || (new Date()).getTime()).replace(/([0-9]{10})/,'$1_')+'000';
 
         // try to extract timestamp and GPS coordinates from EXIF
         loadImage.parseMetaData(
@@ -418,7 +424,8 @@ var views={
                     timestamp: timestamp,
                     lon: lon,
                     lat: lat,
-                    sha256: result.sha256
+                    sha256: result.sha256,
+                    offset: result.offset
                   }));
 
                   // update file
@@ -1057,7 +1064,7 @@ function file_hash(file, callback) {
 function file_update(file,callback) {
 
   // skip already updated file
-  if (file.updated) {
+  if (disable_fileUpdate || file.updated) {
     callback({
       updated: true,
       sha256: file.sha256
@@ -1076,26 +1083,40 @@ function file_update(file,callback) {
     });
     console.log(exif);          
 
-    // TODO: date should come from the server
-    exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";
+    if (exif) {
 
-    var jpeg;
+      // TODO: date should come from the server
+      exif['0th'][piexif.ImageIFD.Copyright]="Copyright (c) "+(new Date()).getFullYear()+" by DOXEL.org at Alsenet SA. CCBY-SA.";
 
-    showtime('new jpeg',function(){
-      var bytes=piexif.dump(exif);
-      jpeg=piexif.insert(bytes,e.target.result);
-    });
+      var jpeg;
 
-    var sha256;
-    showtime('sha256',function(){
-      sha256=asmCrypto.SHA256.hex(jpeg);
-      console.log(sha256);
-    });
+      var bytes;
+      showtime('new jpeg',function(){
+        bytes=piexif.dump(exif);
+        jpeg=piexif.insert(bytes,e.target.result);
+      });
 
-    callback({
-      jpeg: jpeg,
-      sha256: sha256
-    });
+      // compute sha256 for image data (skip exif)
+      var sha256;
+      showtime('sha256',function(){
+        sha256=asmCrypto.SHA256.hex(jpeg.substr(bytes.length+2));
+        console.log(sha256);
+      });
+
+      callback({
+        jpeg: jpeg,
+        sha256: sha256,
+        offset: bytes.length+2
+      });
+
+    } else {
+      console.log('no exif !');
+      callback({
+        jpeg: e.target.result,
+        sha256: asmCrypto.SHA256.hex(jpeg),
+        offset: 0
+      });
+    }
   }
   reader.readAsBinaryString(file);
 }
