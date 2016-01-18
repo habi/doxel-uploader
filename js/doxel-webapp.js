@@ -166,7 +166,7 @@ var views={
       *
       */
       FilesAdded: function views_plupload_uploaderEvents_filesAdded(uploader,files){
-        if (uploader.file_duplicate_count) {
+        if (files.length && uploader.file_duplicate_count) {
             alert(uploader.file_duplicate_count+' duplicate file'+((uploader.file_duplicate_count>1)?'s were':' was')+' discarded.');
             uploader.file_duplicate_count=0;
         }
@@ -322,6 +322,8 @@ var views={
                   alert(e.message);
                 }
               }
+
+              console.log(timestamp);
 
               // get GPS coordinates
               try {
@@ -1064,7 +1066,7 @@ function file_hash(file, callback) {
 function file_update(file,callback) {
 
   // skip already updated file
-  if (disable_fileUpdate || file.updated) {
+  if (file.updated) {
     callback({
       updated: true,
       sha256: file.sha256
@@ -1076,12 +1078,28 @@ function file_update(file,callback) {
   var reader=new FileReader();
   reader.onload=function (e) {
 
+    if (disable_fileUpdate) {
+      callback({
+        updated: true,
+        jpeg: e.target.result,
+        sha256: asmCrypto.SHA256.hex(e.target.result),
+        offset: 0
+      });
+      return;
+    }
+
     var exif={};
 
     showtime('load exif',function(){
-      exif  = piexif.load(e.target.result);
+      try {
+        exif  = piexif.load(e.target.result);
+
+      } catch(e) {
+        console.log(e);
+        exif = null;
+      }
     });
-    console.log(exif);          
+    console.log(exif);
 
     if (exif) {
 
@@ -1091,17 +1109,28 @@ function file_update(file,callback) {
       var jpeg;
 
       var bytes;
-      showtime('new jpeg',function(){
-        bytes=piexif.dump(exif);
-        jpeg=piexif.insert(bytes,e.target.result);
-      });
+//      showtime('new jpeg',function(){
+        try {
+          bytes=piexif.dump(exif);
+          jpeg=piexif.insert(bytes,e.target.result);
+        } catch(e) {
+          console.log(e);
+          callback({
+            jpeg: e.target.result,
+            sha256: asmCrypto.SHA256.hex(e.target.result),
+            offset: 0
+          });
+          return;
+        }
+
+  //    });
 
       // compute sha256 for image data (skip exif)
       var sha256;
-      showtime('sha256',function(){
+//      showtime('sha256',function(){
         sha256=asmCrypto.SHA256.hex(jpeg.substr(bytes.length+2));
         console.log(sha256);
-      });
+//      });
 
       callback({
         jpeg: jpeg,
@@ -1113,7 +1142,7 @@ function file_update(file,callback) {
       console.log('no exif !');
       callback({
         jpeg: e.target.result,
-        sha256: asmCrypto.SHA256.hex(jpeg),
+        sha256: asmCrypto.SHA256.hex(e.target.result),
         offset: 0
       });
     }
