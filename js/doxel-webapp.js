@@ -34,10 +34,13 @@
  */
 
 var disable_fileUpdate=false;
-window.__alert=window.alert;
-window.alert=function(){
+window.alert=function(message){
   console.trace('alert');
-  return window.__alert.apply(window,Array.prototype.slice.call(arguments));
+  return window.top.$.notify({
+    message: message
+  },  {
+    newest_on_top: true,                                                                                                           
+  });
 }
 
 $(document).ready(function(){
