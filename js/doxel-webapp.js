@@ -144,12 +144,26 @@ var views={
       *
       */
       Error: function views_plupload_uploaderEvents_Error(uploader,error){
-        console.log('Error',arguments);
         if (error.code!=-602) { // no alert here on duplicate file error
+
             if (error.response && String(error.response).match('jsonrpc')) {
               var response=JSON.parse(error.response);
-              alert(response.error.message);
+
+              if (response.error) {
+
+                if (response.error.original) {
+                  console.log(response.error.original);
+                }
+
+                alert(response.error.message);
+
+              } else {
+                console.log(arguments);
+                alert('Internal server error !');
+              }
+
             } else {
+              console.log(arguments);
               alert(error.message);
             }
             uploader.stop();
@@ -429,8 +443,7 @@ var views={
                     timestamp: timestamp,
                     lon: lon,
                     lat: lat,
-                    sha256: result.sha256,
-                    offset: result.offset
+                    sha256: result.sha256
                   }));
 
                   // update file
@@ -531,6 +544,11 @@ var views={
 
             failed=true;
             message=response.error.message;
+
+            if (response.error.original) {
+              console.log(response.error.original);
+            }
+
 
           } else {
 
@@ -1085,23 +1103,28 @@ function file_update(file,callback) {
       callback({
         updated: true,
         jpeg: e.target.result,
-        sha256: asmCrypto.SHA256.hex(e.target.result),
-        offset: 0
+        sha256: asmCrypto.SHA256.hex(e.target.result)
       });
       return;
     }
 
     var exif={};
+    var exifReader;
+    var b64;
 
-    showtime('load exif',function(){
+//    showtime('load exif',function(){
       try {
-        exif  = piexif.load(e.target.result);
+        var res = piexif.load(e.target.result);
+        exif=res.exif_dict;
+        exifReader=res.exifReader;
+        b64=res.b64;
 
       } catch(e) {
         console.log(e);
         exif = null;
       }
-    });
+
+//    });
     console.log(exif);
 
     if (exif) {
@@ -1115,13 +1138,18 @@ function file_update(file,callback) {
 //      showtime('new jpeg',function(){
         try {
           bytes=piexif.dump(exif);
-          jpeg=piexif.insert(bytes,e.target.result);
+          if (exifReader.app1_segmentIndex===undefined) {
+            jpeg=piexif.insert(bytes,exifReader);
+          } else {
+            jpeg=piexif.replace(bytes,exifReader,b64);
+          }
+
         } catch(e) {
+          alert('Could not update exif for '+file.name);
           console.log(e);
           callback({
             jpeg: e.target.result,
-            sha256: asmCrypto.SHA256.hex(e.target.result),
-            offset: 0
+            sha256: asmCrypto.SHA256.hex(exifReader.getJpegData())
           });
           return;
         }
@@ -1131,22 +1159,20 @@ function file_update(file,callback) {
       // compute sha256 for image data (skip exif)
       var sha256;
 //      showtime('sha256',function(){
-        sha256=asmCrypto.SHA256.hex(jpeg.substr(bytes.length+2));
+        sha256=asmCrypto.SHA256.hex(exifReader.getJpegData());
         console.log(sha256);
 //      });
 
       callback({
         jpeg: jpeg,
-        sha256: sha256,
-        offset: bytes.length+2
+        sha256: sha256
       });
 
     } else {
       console.log('no exif !');
       callback({
         jpeg: e.target.result,
-        sha256: asmCrypto.SHA256.hex(e.target.result),
-        offset: 0
+        sha256: asmCrypto.SHA256.hex(exifReader.getJpegData())
       });
     }
   }
