@@ -1144,9 +1144,9 @@ function file_update(file,callback) {
             jpeg=piexif.replace(bytes,exifReader,b64);
           }
 
-        } catch(e) {
+        } catch(err) {
           alert('Could not update exif for '+file.name);
-          console.log(e);
+          console.log(err);
           callback({
             jpeg: e.target.result,
             sha256: asmCrypto.SHA256.hex(exifReader.getJpegData())
